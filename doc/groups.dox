@@ -1,0 +1,33 @@
+
+/**
+@brief The main, catch-all namespace for Roboticslab UC3M.
+ */
+namespace roboticslab {}
+
+/**
+ * \defgroup teo-bimanipulation_libraries teo-bimanipulation Libraries
+ *
+ * @brief teo-bimanipulation libraries.
+ *
+ */
+
+/**
+ * \defgroup teo-bimanipulation_programs teo-bimanipulation Programs
+ *
+ * @brief teo-bimanipulation programs.
+ */
+
+/**
+ * \defgroup teo-bimanipulation_applications teo-bimanipulation Applications (Collections of Programs)
+ *
+ * @brief teo-bimanipulation applications (collections of programs).
+ */
+
+/**
+ * \defgroup teo-bimanipulation_examples teo-bimanipulation Examples
+ *
+ * @brief teo-bimanipulation examples.
+ */
+
+
+
