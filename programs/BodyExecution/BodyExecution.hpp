@@ -6,7 +6,7 @@
 #include <yarp/os/all.h>
 #include <yarp/dev/all.h>
 
-#define DEFAULT_ROBOT "/teoSim" // teo or teoSim
+#define DEFAULT_ROBOT "/teo" // teo or teoSim
 
 #define VOCAB_STATE_SALUTE VOCAB4('s','a','l','u')
 #define VOCAB_STATE_HOME VOCAB4('h','o','m','e')

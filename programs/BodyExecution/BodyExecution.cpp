@@ -271,8 +271,8 @@ void BodyExecution::run()
     while(true){
         printf("Movement 1\n");
         {
-            double rightArmPoss[7] = {-15.7117919921875, -11.230224609375, 0.175746917724609, 9.22671318054199, -0.509674072265625, 37.6098403930664, 0.0};
-            double lefArmPoss[7] = {15.7117919921875, 11.230224609375, -0.175746917724609, -9.22671318054199, 0.509674072265625, -37.6098403930664, 0.0};
+            double rightArmPoss[7] = {-22.9173889160156, 2.63620376586914, 31.8101921081543, 15.9050960540771, -22.3022766113281, 22.6713523864746, 0.0};
+            double lefArmPoss[7] = {22.9173889160156, -2.63620376586914, -31.8101921081543, -15.9050960540771, 22.3022766113281, -22.6713523864746, 0.0};
             std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+7); //teoSim (+6) teo (+7)
             std::vector<double> leftArm(&lefArmPoss[0], &lefArmPoss[0]+7);
             std::vector<double> head(2,0.0);
@@ -282,8 +282,8 @@ void BodyExecution::run()
 
         printf("Movement 2\n");
         {
-            double rightArmPoss[7] = {-42.0738220214844, -13.2513122558594, 3.16344451904297, 53.8664321899414, -0.509674072265625, 38.4007034301758, 0.0};
-            double lefArmPoss[7] = {42.0738220214844, 13.2513122558594, -3.16344451904297, -53.8664321899414, 0.509674072265625, -38.4007034301758, 0.0};
+            double rightArmPoss[7] = {-22.1265563964844, -5.6942138671875, 64.9384841918945, 15.9050960540771, -59.8242492675781, 22.5834789276123, 0.0};
+            double lefArmPoss[7] = {22.1265563964844, 5.6942138671875, -64.9384841918945, -15.9050960540771, 59.8242492675781, -22.5834789276123, 0.0};
             std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+7); //teoSim (+6) teo (+7)
             std::vector<double> leftArm(&lefArmPoss[0], &lefArmPoss[0]+7);
             std::vector<double> head(2,0.0);
@@ -293,14 +293,104 @@ void BodyExecution::run()
 
         printf("Movement 3\n");
         {
-            double rightArmPoss[7] = {-57.1001892089844, -15.2723999023438, 10.8084354400635, 57.3813705444336, -0.5975341796875, 82.0738143920898, 0.0};
-            double lefArmPoss[7] = {57.1001892089844, 15.2723999023438, -10.8084354400635, -57.3813705444336, 0.5975341796875, -82.0738143920898, 0.0};
+            double rightArmPoss[7] = {-36.8014221191406, -8.1546630859375, 49.2970123291016, 30.579963684082, -85.1318054199219, 22.6713523864746, 0.0};
+            double lefArmPoss[7] = {36.8014221191406, 8.1546630859375, -49.2970123291016, -30.579963684082, 85.1318054199219, -22.6713523864746, 0.0};
             std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+7); //teoSim (+6) teo (+7)
             std::vector<double> leftArm(&lefArmPoss[0], &lefArmPoss[0]+7);
             std::vector<double> head(2,0.0);
             jointsMoveAndWait(leftArm,rightArm,head);
             getchar();
         }
+        printf("Movement 4\n");
+        {
+            double rightArmPoss[7] = {-35.0439453125, -27.3110656738281, 59.8418273925781, 52.8119506835938, -85.1318054199219, 38.4885749816895, 0.0};
+            double lefArmPoss[7] = {35.0439453125, 27.3110656738281, -59.8418273925781, -52.8119506835938, 85.1318054199219, -38.4885749816895, 0.0};
+            std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+7); //teoSim (+6) teo (+7)
+            std::vector<double> leftArm(&lefArmPoss[0], &lefArmPoss[0]+7);
+            std::vector<double> head(2,0.0);
+            jointsMoveAndWait(leftArm,rightArm,head);
+            getchar();
+        }
+
+        printf("Movement 5\n");
+        {
+            double rightArmPoss[7] = {-9.3848876953125, -52.3550109863281, 66.9595794677734, 52.8998222351074, -81.4411315917969, 48.9455184936523, 0.0};
+            double lefArmPoss[7] = {9.3848876953125, 52.3550109863281, -66.9595794677734, -52.8998222351074, 81.4411315917969, -48.9455184936523, 0.0};
+            std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+7); //teoSim (+6) teo (+7)
+            std::vector<double> leftArm(&lefArmPoss[0], &lefArmPoss[0]+7);
+            std::vector<double> head(2,0.0);
+            jointsMoveAndWait(leftArm,rightArm,head);
+            getchar();
+        }
+
+        printf("Movement 6\n");
+        {
+            double rightArmPoss[7] = {30.579963684082, -52.1792602539062, 50.2636184692383, 52.8119506835938, -81.5289916992188, 64.8506164550781, 0.0};
+            double lefArmPoss[7] = {-30.579963684082, 52.1792602539062, -50.2636184692383, -52.8119506835938, 81.5289916992188, -64.8506164550781, 0.0};
+            std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+7); //teoSim (+6) teo (+7)
+            std::vector<double> leftArm(&lefArmPoss[0], &lefArmPoss[0]+7);
+            std::vector<double> head(2,0.0);
+            jointsMoveAndWait(leftArm,rightArm,head);
+            getchar();
+        }
+
+        printf("Movement 7\n");
+        {
+            double rightArmPoss[7] = {32.1616859436035, -44.1827697753906, 22.0562381744385, 52.7240753173828, -81.5289916992188, 87.5219650268555, 1200.0};
+            double lefArmPoss[7] = {-32.1616859436035, 44.1827697753906, -22.0562381744385, -52.7240753173828, 81.5289916992188, -87.5219650268555, 1200.0};
+            std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+7); //teoSim (+6) teo (+7)
+            std::vector<double> leftArm(&lefArmPoss[0], &lefArmPoss[0]+7);
+            std::vector<double> head(2,0.0);
+            jointsMoveAndWait(leftArm,rightArm,head);
+            getchar();
+        }
+
+        printf("Movement 8\n");
+        {
+            double rightArmPoss[7] = {32.1616859436035, -29.5079040527344, 4.04217910766602, 52.8119506835938, -81.5289916992188, 93.0579986572266, 1200.0};
+            double lefArmPoss[7] = {-32.1616859436035, 29.5079040527344, -4.04217910766602, -52.8119506835938, 81.5289916992188, -93.0579986572266, 1200.0};
+            std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+7); //teoSim (+6) teo (+7)
+            std::vector<double> leftArm(&lefArmPoss[0], &lefArmPoss[0]+7);
+            std::vector<double> head(2,0.0);
+            jointsMoveAndWait(leftArm,rightArm,head);
+            getchar();
+        }
+
+
+        printf("Movement 9\n");
+        {
+            double rightArmPoss[7] = {33.4797897338867, -19.8418273925781, -5.25482177734375, 52.7240753173828, -81.5289916992188, 98.5940246582031, 1200.0};
+            double lefArmPoss[7] = {-33.4797897338867, 19.8418273925781, 5.25482177734375, -52.7240753173828, 81.5289916992188, -98.5940246582031, 1200.0};
+            std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+7); //teoSim (+6) teo (+7)
+            std::vector<double> leftArm(&lefArmPoss[0], &lefArmPoss[0]+7);
+            std::vector<double> head(2,0.0);
+            jointsMoveAndWait(leftArm,rightArm,head);
+            getchar();
+        }
+
+        printf("Movement 10\n");
+        {
+            double rightArmPoss[7] = {31.2829513549805, -14.0421752929688, -10.7908630371094, 52.6362037658691, -81.5289916992188, 88.4885787963867, 1200.0};
+            double lefArmPoss[7] = {-31.2829513549805, 14.0421752929688, 10.7908630371094, -52.6362037658691, 81.5289916992188, -88.4885787963867, 1200.0};
+            std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+7); //teoSim (+6) teo (+7)
+            std::vector<double> leftArm(&lefArmPoss[0], &lefArmPoss[0]+7);
+            std::vector<double> head(2,0.0);
+            jointsMoveAndWait(leftArm,rightArm,head);
+            getchar();
+        }
+
+        printf("Close hands\n");
+        {
+            double rightArmPoss[7] = {31.2829513549805, -14.0421752929688, -10.7908630371094, 52.6362037658691, -81.5289916992188, 88.4885787963867, -1200.0};
+            double lefArmPoss[7] = {-31.2829513549805, 14.0421752929688, 10.7908630371094, -52.6362037658691, 81.5289916992188, -88.4885787963867, -1200.0};
+            std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+7); //teoSim (+6) teo (+7)
+            std::vector<double> leftArm(&lefArmPoss[0], &lefArmPoss[0]+7);
+            std::vector<double> head(2,0.0);
+            jointsMoveAndWait(leftArm,rightArm,head);
+            getchar();
+        }
+
+
     }
 }
 
