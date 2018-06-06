@@ -244,24 +244,62 @@ bool BodyExecution::jointsMoveAndWait(std::vector<double>& leftArm, std::vector<
 
 bool BodyExecution::read(yarp::os::ConnectionReader& connection)
 {
-     yarp::os::Bottle in, out; // in: the VOCAB_STATE, out: boolean to check if the movement has finished
-     bool ok = in.read(connection);
-     //if (!ok) return false;
-
-     state = in.get(0).asVocab();
-
-     if(state == VOCAB_RETURN_MOVEMENT_STATE){
-
-         // -- Gets a way to reply to the message, if possible.
-         ConnectionWriter *returnToSender = connection.getWriter();
-
-         if(done) {
-             out.addInt(1); // done = 1 (true)
-         }
-         if (returnToSender!=NULL)
-             out.write(*returnToSender);
-     }
      return true;
+}
+
+/************************************************************************/
+bool BodyExecution::getRightArmFwdKin(std::vector<double> *currentX)
+{
+    /** ----- Obtain current joint position ----- **/
+    int rightArmAxes;
+    rightArmIPositionControl2->getAxes(&rightArmAxes);
+
+    if (!rightArmDevice.view(rightArmIEncoders) ) { // connecting our device with "IEncoders" interface
+        printf("[warning] Problems acquiring rightArmIEncoders interface\n");
+        return false;
+    } else printf("[success] Acquired rightArmIEncoders interface\n");
+
+
+    std::vector<double> currentQ(rightArmAxes);
+    if ( ! rightArmIEncoders->getEncoders( currentQ.data() ) ){
+        printf("[ERROR] ForgetEncoders failed\n");
+        return false;
+    }
+
+    /** ----- Obtain current cartesian position ---------- **/
+    if ( ! rightArmICartesianSolver->fwdKin(currentQ, *currentX) )    {
+        printf("[ERROR] Forward Kinematic failed.\n");
+        return false;
+    }
+
+    return true;
+}
+
+/************************************************************************/
+bool BodyExecution::getLeftArmFwdKin(std::vector<double> *currentX)
+{
+    /** ----- Obtain current joint position ----- **/
+    int leftArmAxes;
+    leftArmIPositionControl2->getAxes(&leftArmAxes);
+
+    if (!leftArmDevice.view(leftArmIEncoders) ) { // connecting our device with "IEncoders" interface
+        printf("[warning] Problems acquiring leftArmIEncoders interface\n");
+        return false;
+    } else printf("[success] Acquired leftArmIEncoders interface\n");
+
+    std::vector<double> currentQ(leftArmAxes);
+    if ( ! leftArmIEncoders->getEncoders( currentQ.data() ) ){
+        printf("[ERROR] ForgetEncoders failed\n");
+        return false;
+    }
+
+    /** ----- Obtain current cartesian position ---------- **/
+    if ( ! rightArmICartesianSolver->fwdKin(currentQ, *currentX) )    {
+        printf("[ERROR] Forward Kinematic failed.\n");
+        return false;
+    }
+
+    return true;
 }
 
 /************************************************************************/
