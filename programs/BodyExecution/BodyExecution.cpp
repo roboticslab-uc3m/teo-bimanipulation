@@ -23,6 +23,45 @@ bool BodyExecution::configure(yarp::os::ResourceFinder &rf)
     std::string bodyExecutionStr("/bodyExecution");
 
 
+    // ----- Configuring KDL Solver for right-arm -----
+    yarp::os::Property rightArmSolverOptions;
+    rightArmSolverOptions.fromString( rf.toString() );
+    rightArmSolverOptions.put("device","KdlSolver");
+    rightArmSolverDevice.open(rightArmSolverOptions);
+
+    if( ! rightArmSolverDevice.isValid() )
+    {
+        printf("[ERROR] KDLSolver solver device not valid \n");
+        return false;
+    }
+
+    if( ! rightArmSolverDevice.view(rightArmICartesianSolver) )
+    {
+        printf("[ERROR] Could not view iCartesianSolver in KDLSolver \n");
+        return false;
+    } else printf("[success] Acquired rightArmICartesianSolver interface\n");
+
+
+    // ----- Configuring KDL Solver for left-arm -----
+    yarp::os::Property leftArmSolverOptions;
+    leftArmSolverOptions.fromString( rf.toString() );
+    std::string solverStr = "KdlSolver";
+    leftArmSolverOptions.put("device",solverStr);
+    leftArmSolverDevice.open(leftArmSolverOptions);
+
+    if( ! leftArmSolverDevice.isValid() )
+    {
+        printf("[ERROR] solver device not valid: %s.\n",solverStr.c_str());
+        return false;
+    }
+
+    if( ! leftArmSolverDevice.view(leftArmICartesianSolver) )
+    {
+        printf("[ERROR] Could not view iCartesianSolver in: %s.\n",solverStr.c_str());
+        return false;
+    } else printf("[success] Acquired leftArmICartesianSolver interface\n");
+
+
     // ------ HEAD -------
     yarp::os::Property headOptions;
     headOptions.put("device","remote_controlboard");
@@ -72,6 +111,13 @@ bool BodyExecution::configure(yarp::os::ResourceFinder &rf)
 
 
     // ------ RIGHT ARM -------
+    yarp::os::Property options;
+    options.put("device", "CartesianControlClient"); // our device (a dynamically loaded library)
+    options.put("cartesianRemote", "/teoSim/rightArm/CartesianControl"); // remote port through which we'll talk to the server
+    options.put("cartesianLocal", "/CartesianControlExample");
+    options.put("transform", 1);  // Was yarp::os::Value::getNullValue()
+
+
     yarp::os::Property rightArmOptions;
     rightArmOptions.put("device","remote_controlboard");
     rightArmOptions.put("remote",robot+"/rightArm");
@@ -94,6 +140,7 @@ bool BodyExecution::configure(yarp::os::ResourceFinder &rf)
         printf("[warning] Problems acquiring rightArmIPositionControl2 interface\n");
         return false;
     } else printf("[success] Acquired rightArmIPositionControl2 interface\n");
+
 
     //-- Set control modes
     int headAxes;
@@ -119,11 +166,6 @@ bool BodyExecution::configure(yarp::os::ResourceFinder &rf)
         printf("[warning] Problems setting position control mode of: right-arm\n");
         return false;
     }
-
-    // -- Configuring ports
-    inDialogPort.open("/bodyExecution/rpc:s");
-    inDialogPort.setReader(*this);  //-- Callback reader: avoid need to call inSrPort.read().
-
     return this->start();  //-- Start the thread (calls run).
 }
 
@@ -250,6 +292,7 @@ bool BodyExecution::read(yarp::os::ConnectionReader& connection)
 /************************************************************************/
 bool BodyExecution::getRightArmFwdKin(std::vector<double> *currentX)
 {
+
     /** ----- Obtain current joint position ----- **/
     int rightArmAxes;
     rightArmIPositionControl2->getAxes(&rightArmAxes);
@@ -259,11 +302,17 @@ bool BodyExecution::getRightArmFwdKin(std::vector<double> *currentX)
         return false;
     } else printf("[success] Acquired rightArmIEncoders interface\n");
 
-
     std::vector<double> currentQ(rightArmAxes);
     if ( ! rightArmIEncoders->getEncoders( currentQ.data() ) ){
         printf("[ERROR] ForgetEncoders failed\n");
         return false;
+    }
+    else
+    {
+        printf("[success] Obtained encoder values for right-arms: (");
+        for(int i=0; i<rightArmAxes; i++)
+            printf("%f ",currentQ[i]);
+        printf(")\n ");
     }
 
     /** ----- Obtain current cartesian position ---------- **/
@@ -278,6 +327,7 @@ bool BodyExecution::getRightArmFwdKin(std::vector<double> *currentX)
 /************************************************************************/
 bool BodyExecution::getLeftArmFwdKin(std::vector<double> *currentX)
 {
+
     /** ----- Obtain current joint position ----- **/
     int leftArmAxes;
     leftArmIPositionControl2->getAxes(&leftArmAxes);
@@ -292,9 +342,16 @@ bool BodyExecution::getLeftArmFwdKin(std::vector<double> *currentX)
         printf("[ERROR] ForgetEncoders failed\n");
         return false;
     }
+    else
+    {
+        printf("[success] Obtained encoder values for left-arms: (");
+        for(int i=0; i<leftArmAxes; i++)
+            printf("%f ",currentQ[i]);
+        printf(")\n ");
+    }
 
     /** ----- Obtain current cartesian position ---------- **/
-    if ( ! rightArmICartesianSolver->fwdKin(currentQ, *currentX) )    {
+    if ( ! leftArmICartesianSolver->fwdKin(currentQ, *currentX) )    {
         printf("[ERROR] Forward Kinematic failed.\n");
         return false;
     }
@@ -315,6 +372,24 @@ void BodyExecution::run()
             std::vector<double> leftArm(&lefArmPoss[0], &lefArmPoss[0]+7);
             std::vector<double> head(2,0.0);
             jointsMoveAndWait(leftArm,rightArm,head);
+
+            std::vector<double> rightArmCoord;
+            if(! getRightArmFwdKin(&rightArmCoord)){
+                printf("[ERROR] Doing Forward Kinematic...\n");
+            }
+            printf("Forward Kinematic for right-arm: (");
+            for(int i=0; i<rightArmCoord.size(); i++)
+                printf("%f ",rightArmCoord[i]);
+            printf(")\n ");
+
+            std::vector<double> leftArmCoord;
+            if(! getLeftArmFwdKin(&leftArmCoord)){
+                printf("[ERROR] Doing Forward Kinematic...\n");
+            }
+            printf("Forward Kinematic for left-arm: (");
+            for(int i=0; i<leftArmCoord.size(); i++)
+                printf("%f ",leftArmCoord[i]);
+            printf(")\n ");
             getchar();
         }
 
@@ -427,7 +502,6 @@ void BodyExecution::run()
             jointsMoveAndWait(leftArm,rightArm,head);
             getchar();
         }
-
 
     }
 }

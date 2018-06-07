@@ -8,7 +8,7 @@
 
 #include "ICartesianSolver.h"
 
-#define DEFAULT_ROBOT "/teo" // teo or teoSim
+#define DEFAULT_ROBOT "/teoSim" // teo or teoSim
 
 
 using namespace yarp::os;
@@ -43,6 +43,7 @@ private:
      /** Left Arm PositionControl2 Interface */
      yarp::dev::IPositionControl2 *leftArmIPositionControl2;
      /** Solver device **/
+     yarp::dev::PolyDriver leftArmSolverDevice;
      roboticslab::ICartesianSolver *leftArmICartesianSolver;
      /** Forward Kinematic function **/
      bool getLeftArmFwdKin(std::vector<double> *currentX);
@@ -56,6 +57,7 @@ private:
      /** Right Arm PositionControl2 Interface */
      yarp::dev::IPositionControl2 *rightArmIPositionControl2;
      /** Solver device **/
+     yarp::dev::PolyDriver rightArmSolverDevice;
      roboticslab::ICartesianSolver *rightArmICartesianSolver;
      /** Forward Kinematic function **/
      bool getRightArmFwdKin(std::vector<double> *currentX);
