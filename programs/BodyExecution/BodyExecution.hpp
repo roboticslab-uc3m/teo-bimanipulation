@@ -5,7 +5,7 @@
 
 #include <yarp/os/all.h>
 #include <yarp/dev/all.h>
-
+#include <fstream>
 #include "ICartesianSolver.h"
 
 #define DEFAULT_ROBOT "/teoSim" // teo or teoSim
@@ -80,6 +80,9 @@ private:
 
      /** Arm Joints Move And Wait */
      bool jointsMoveAndWait(std::vector<double>& leftArm, std::vector<double>& rightArm, std::vector<double> &head);
+
+     std::vector<double> interpolate(double pta, double ptb, int res);
+     bool moveTrayLinearly(int axis, double dist);
 
      /** State */
      int state;
