@@ -25,8 +25,11 @@ bool BodyExecution::configure(yarp::os::ResourceFinder &rf)
 
     // ----- Configuring KDL Solver for right-arm -----
     yarp::os::Property rightArmSolverOptions;
-    rightArmSolverOptions.fromString(rf.toString());
+    rightArmSolverOptions.fromConfigFile("/usr/local/share/teo-configuration-files/contexts/kinematics/rightArmKinematics.ini");
+    //rightArmSolverOptions.fromString(rf.toString());
     rightArmSolverOptions.put("device","KdlSolver");
+    //rightArmSolverOptions.put("maxIter", 10000); // iterator configuration
+    //rightArmSolverOptions.put("eps", 1e-9);
     rightArmSolverDevice.open(rightArmSolverOptions);
 
     if( ! rightArmSolverDevice.isValid() )
@@ -45,7 +48,7 @@ bool BodyExecution::configure(yarp::os::ResourceFinder &rf)
     // ----- Configuring KDL Solver for left-arm -----
 
     yarp::os::Property leftArmSolverOptions;
-    leftArmSolverOptions.fromString(rf.toString());
+    leftArmSolverOptions.fromConfigFile("/usr/local/share/teo-configuration-files/contexts/kinematics/leftArmKinematics.ini");
     std::string solverStr = "KdlSolver";
     leftArmSolverOptions.put("device",solverStr);
     leftArmSolverDevice.open(leftArmSolverOptions);
@@ -144,7 +147,7 @@ bool BodyExecution::configure(yarp::os::ResourceFinder &rf)
 
 
     //-- Set control modes
-    int headAxes;
+    //int headAxes;
     headIPositionControl2->getAxes(&headAxes);
     std::vector<int> headControlModes(headAxes,VOCAB_CM_POSITION);
     if(! headIControlMode2->setControlModes( headControlModes.data() )){
@@ -152,7 +155,7 @@ bool BodyExecution::configure(yarp::os::ResourceFinder &rf)
         return false;
     }
     
-    int leftArmAxes;
+    //int leftArmAxes;
     leftArmIPositionControl2->getAxes(&leftArmAxes);
     std::vector<int> leftArmControlModes(leftArmAxes,VOCAB_CM_POSITION);
     if(! leftArmIControlMode2->setControlModes( leftArmControlModes.data() )){
@@ -160,7 +163,7 @@ bool BodyExecution::configure(yarp::os::ResourceFinder &rf)
         return false;
     }
 
-    int rightArmAxes;
+
     rightArmIPositionControl2->getAxes(&rightArmAxes);
     std::vector<int> rightArmControlModes(rightArmAxes,VOCAB_CM_POSITION);
     if(! rightArmIControlMode2->setControlModes(rightArmControlModes.data())){
@@ -193,14 +196,14 @@ double BodyExecution::getPeriod()
 
 bool BodyExecution::updateModule()
 {
-    printf("Entered updateModule...\n");
+    //printf("Entered updateModule...\n");
 
     return true;
 }
 
 /************************************************************************/
 
-bool BodyExecution::jointsMoveAndWait(std::vector<double>& leftArm, std::vector<double> &rightArm, std::vector<double> &head)
+bool BodyExecution::jointsMoveAndWait(std::vector<double>& leftArm, std::vector<double> &rightArm, std::vector<double> &head, bool wait)
 {
     // -- Configuring Speeds and Accelerations
 
@@ -254,23 +257,24 @@ bool BodyExecution::jointsMoveAndWait(std::vector<double>& leftArm, std::vector<
             return false;
     }
 
+    if(wait){
+        // -- checking movement done...
+        bool doneRight = false;
+        bool doneLeft = false;
+        bool doneHead = false;
 
-    // -- checking movement done...
-    bool doneRight = false;
-    bool doneLeft = false;
-    bool doneHead = false;
+        while(!doneRight)
+        {
+            yarp::os::Time::delay(0.1);
+            rightArmIPositionControl2->checkMotionDone(&doneRight);
+        }
 
-    while(!doneRight)
-    {
-        yarp::os::Time::delay(0.1);
-        rightArmIPositionControl2->checkMotionDone(&doneRight);
+        while(!doneLeft)
+        {
+            yarp::os::Time::delay(0.1);
+            leftArmIPositionControl2->checkMotionDone(&doneLeft);
+        }
     }
-
-    while(!doneLeft)
-    {
-        yarp::os::Time::delay(0.1);
-        leftArmIPositionControl2->checkMotionDone(&doneLeft);
-    }    
 
 /*  // to avoid problems, we have commented checkMotionDone for the head
     while(!doneHead)
@@ -375,6 +379,7 @@ std::vector<double> BodyExecution::interpolate(double pta, double ptb, int res)
     printf("\n");
 
     printf("------------------------------------\n");
+    getchar();
     return path;
 }
 
@@ -435,31 +440,67 @@ bool BodyExecution::moveTrayLinearly(int axis, double dist)
     // move arms in the cartesian space
     for (int i = 0; i < res; i++)
     {
+        printf("-------- Position: %d -------\n", i+1);
         rightArmVector[axis] = rightArmPath[i]; // new point obtained by interpolation
         leftArmVector[axis] = leftArmPath[i]; // new point obtained by interpolation
 
-        /*
-        if(leftArmICartesianControl->movj(leftArmVector))
-        {
-            printf("[moving...]: leftArm to position (%f, %f, %f) \n", leftArmVector[0], leftArmVector[1], leftArmVector[2]);
-            leftArmICartesianControl->wait();
-        }
-        if(rightArmICartesianControl->movj(rightArmVector))
-        {
-            printf("[moving...]: rightArm to position (%f, %f, %f) \n", rightArmVector[0], rightArmVector[1], rightArmVector[2]);
-            rightArmICartesianControl->wait();
-        }
-        */
-        /*
-        if ( ! rightArmICartesianSolver->invKin(desireX,currentQ,desireQ) )    {
-                CD_ERROR("invKin failed.\n");
-            }
+        printf("* Position of RIGHT-ARMS in cartesian space: (");
+        for(int i=0; i<rightArmVector.size(); i++)
+            printf("%f ",rightArmVector[i]);
+        printf(")\n ");
 
-            CD_DEBUG_NO_HEADER("[IK]");
-            for(int i=0;i<numRobotJoints;i++)
-                CD_DEBUG_NO_HEADER("%f ",desireX[i]);
-            CD_DEBUG_NO_HEADER("\n ");
-    */
+        printf("* Position of LEFT-ARMS in cartesian space: (");
+        for(int i=0; i<leftArmVector.size(); i++)
+            printf("%f ",leftArmVector[i]);
+        printf(")\n ");
+
+        std::vector<double> rightArmCurrentQ(rightArmAxes);
+        std::vector<double> rightArmDesireQ(rightArmAxes);
+        std::vector<double> leftArmCurrentQ(leftArmAxes);
+        std::vector<double> leftArmDesireQ(leftArmAxes);
+
+        // initialize to 0
+        rightArmCurrentQ.clear();
+        rightArmDesireQ.clear();
+        leftArmCurrentQ.clear();
+        leftArmDesireQ.clear();
+
+        // currentQ: pequeña ayuda que le das al solver sobre la posición inicial en posicion articular
+        if ( ! rightArmIEncoders->getEncoders( rightArmCurrentQ.data() ) ){
+            printf("[ERROR] Failed getEncoders of right-arm\n");
+            return false;
+        }
+
+        if ( ! rightArmICartesianSolver->invKin(rightArmVector, rightArmCurrentQ, rightArmDesireQ) )    {
+            printf("[ERROR] invKin failed.\n");
+        }
+
+        printf("-> IK of right-arm: (");
+        for(int i=0; i<rightArmDesireQ.size(); i++)
+            printf("%f ",rightArmDesireQ[i]);
+        printf(")\n ");
+
+        // currentQ: pequeña ayuda que le das al solver sobre la posición inicial en posicion articular
+        if ( ! leftArmIEncoders->getEncoders( leftArmCurrentQ.data() ) ){
+            printf("[ERROR] Failed getEncoders of left-arm\n");
+            return false;
+        }
+
+        if ( ! leftArmICartesianSolver->invKin(leftArmVector, leftArmCurrentQ, leftArmDesireQ) )    {
+            printf("[ERROR] invKin failed.\n");
+        }
+
+        printf("-> IK of left-arm: (");
+        for(int i=0; i<leftArmDesireQ.size(); i++)
+            printf("%f ",leftArmDesireQ[i]);
+        printf(")\n\n ");
+
+        std::vector<double> head(2,0.0);
+        std::vector<double> rightArm(&rightArmDesireQ[0], &rightArmDesireQ[0]+7); //teoSim (+6) teo (+7)
+        std::vector<double> leftArm(&leftArmDesireQ[0], &leftArmDesireQ[0]+7);
+
+        jointsMoveAndWait(leftArm, rightArm, head, true);
+
     }
 
     return true;
@@ -471,137 +512,139 @@ bool BodyExecution::moveTrayLinearly(int axis, double dist)
 void BodyExecution::run()
 {
     while(true){
-        printf("Movement 1\n");
+        printf("[doing...] Captured movement (1)\n");
         {
-            double rightArmPoss[7] = {-22.9173889160156, 2.63620376586914, 31.8101921081543, 15.9050960540771, -22.3022766113281, 22.6713523864746, 0.0};
+            double rightArmPoss[7] = {-22.9173, 2.6362, 31.8101, 15.9050, -22.3022, 22.6713, 0.0};
             double lefArmPoss[7] = {22.9173889160156, -2.63620376586914, -31.8101921081543, -15.9050960540771, 22.3022766113281, -22.6713523864746, 0.0};
             std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+7); //teoSim (+6) teo (+7)
-            std::vector<double> leftArm(&lefArmPoss[0], &lefArmPoss[0]+7);
+            std::vector<double> leftArm(&lefArmPoss[0], &lefArmPoss[0]+7);            
             std::vector<double> head(2,0.0);
-            jointsMoveAndWait(leftArm,rightArm,head);
-
-            std::vector<double> rightArmVector;
-            if(! getRightArmFwdKin(&rightArmVector))
-                printf("[ERROR] Doing Forward Kinematic...\n");
-
-            printf("-> FK of right-arm: (");
-            for(int i=0; i<rightArmVector.size(); i++)
-                printf("%f ",rightArmVector[i]);
-            printf(")\n ");
-
-            std::vector<double> desireX(6);
-            std::vector<double> desireQ(6);
-
-            if ( ! rightArmICartesianSolver->invKin(rightArmVector, desireX, desireQ) )    {
-                printf("[ERROR] invKin failed.\n");
-            } else printf("hecho :)\n");
-
-            printf("-> IK of right-arm: (");
-            for(int i=0; i<desireX.size(); i++)
-                printf("%f ",desireX[i]);
-            printf(")\n ");
-
-            getchar();
+            jointsMoveAndWait(leftArm,rightArm,head,true);
         }
 
-        printf("Movement 2\n");
+        printf("[doing...] Captured movement (2)\n");
         {
             double rightArmPoss[7] = {-22.1265563964844, -5.6942138671875, 64.9384841918945, 15.9050960540771, -59.8242492675781, 22.5834789276123, 0.0};
             double lefArmPoss[7] = {22.1265563964844, 5.6942138671875, -64.9384841918945, -15.9050960540771, 59.8242492675781, -22.5834789276123, 0.0};
             std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+7); //teoSim (+6) teo (+7)
             std::vector<double> leftArm(&lefArmPoss[0], &lefArmPoss[0]+7);
             std::vector<double> head(2,0.0);
-            jointsMoveAndWait(leftArm,rightArm,head);
+            jointsMoveAndWait(leftArm,rightArm,head,true);
         }
 
-        printf("Movement 3\n");
+        printf("[doing...] Captured movement (3)\n");
         {
             double rightArmPoss[7] = {-36.8014221191406, -8.1546630859375, 49.2970123291016, 30.579963684082, -85.1318054199219, 22.6713523864746, 0.0};
             double lefArmPoss[7] = {36.8014221191406, 8.1546630859375, -49.2970123291016, -30.579963684082, 85.1318054199219, -22.6713523864746, 0.0};
             std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+7); //teoSim (+6) teo (+7)
             std::vector<double> leftArm(&lefArmPoss[0], &lefArmPoss[0]+7);
             std::vector<double> head(2,0.0);
-            jointsMoveAndWait(leftArm,rightArm,head);
+            jointsMoveAndWait(leftArm,rightArm,head,true);
+
         }
-        printf("Movement 4\n");
+        printf("[doing...] Captured movement (4)\n");
         {
             double rightArmPoss[7] = {-35.0439453125, -27.3110656738281, 59.8418273925781, 52.8119506835938, -85.1318054199219, 38.4885749816895, 0.0};
             double lefArmPoss[7] = {35.0439453125, 27.3110656738281, -59.8418273925781, -52.8119506835938, 85.1318054199219, -38.4885749816895, 0.0};
             std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+7); //teoSim (+6) teo (+7)
             std::vector<double> leftArm(&lefArmPoss[0], &lefArmPoss[0]+7);
             std::vector<double> head(2,0.0);
-            jointsMoveAndWait(leftArm,rightArm,head);
+            jointsMoveAndWait(leftArm,rightArm,head,true);
         }
 
-        printf("Movement 5\n");
+        printf("[doing...] Captured movement (5)\n");
         {
             double rightArmPoss[7] = {-9.3848876953125, -52.3550109863281, 66.9595794677734, 52.8998222351074, -81.4411315917969, 48.9455184936523, 0.0};
             double lefArmPoss[7] = {9.3848876953125, 52.3550109863281, -66.9595794677734, -52.8998222351074, 81.4411315917969, -48.9455184936523, 0.0};
             std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+7); //teoSim (+6) teo (+7)
             std::vector<double> leftArm(&lefArmPoss[0], &lefArmPoss[0]+7);
             std::vector<double> head(2,0.0);
-            jointsMoveAndWait(leftArm,rightArm,head);
+            jointsMoveAndWait(leftArm,rightArm,head,true);
         }
 
-        printf("Movement 6\n");
+        printf("[doing...] Captured movement (6)\n");
         {
             double rightArmPoss[7] = {30.579963684082, -52.1792602539062, 50.2636184692383, 52.8119506835938, -81.5289916992188, 64.8506164550781, 0.0};
             double lefArmPoss[7] = {-30.579963684082, 52.1792602539062, -50.2636184692383, -52.8119506835938, 81.5289916992188, -64.8506164550781, 0.0};
             std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+7); //teoSim (+6) teo (+7)
             std::vector<double> leftArm(&lefArmPoss[0], &lefArmPoss[0]+7);
             std::vector<double> head(2,0.0);
-            jointsMoveAndWait(leftArm,rightArm,head);
+            jointsMoveAndWait(leftArm,rightArm,head,true);
         }
 
-        printf("Movement 7\n");
+        printf("[doing...] Captured movement (7)\n");
         {
             double rightArmPoss[7] = {32.1616859436035, -44.1827697753906, 22.0562381744385, 52.7240753173828, -81.5289916992188, 87.5219650268555, 1200.0};
             double lefArmPoss[7] = {-32.1616859436035, 44.1827697753906, -22.0562381744385, -52.7240753173828, 81.5289916992188, -87.5219650268555, 1200.0};
             std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+7); //teoSim (+6) teo (+7)
             std::vector<double> leftArm(&lefArmPoss[0], &lefArmPoss[0]+7);
             std::vector<double> head(2,0.0);
-            jointsMoveAndWait(leftArm,rightArm,head);
+            jointsMoveAndWait(leftArm,rightArm,head,true);
         }
 
-        printf("Movement 8\n");
+        printf("[doing...] Captured movement (8)\n");
         {
             double rightArmPoss[7] = {32.1616859436035, -29.5079040527344, 4.04217910766602, 52.8119506835938, -81.5289916992188, 93.0579986572266, 1200.0};
             double lefArmPoss[7] = {-32.1616859436035, 29.5079040527344, -4.04217910766602, -52.8119506835938, 81.5289916992188, -93.0579986572266, 1200.0};
             std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+7); //teoSim (+6) teo (+7)
             std::vector<double> leftArm(&lefArmPoss[0], &lefArmPoss[0]+7);
             std::vector<double> head(2,0.0);
-            jointsMoveAndWait(leftArm,rightArm,head);
+            jointsMoveAndWait(leftArm,rightArm,head,true);
         }
 
 
-        printf("Movement 9\n");
+        printf("[doing...] Captured movement (9)\n");
         {
             double rightArmPoss[7] = {33.4797897338867, -19.8418273925781, -5.25482177734375, 52.7240753173828, -81.5289916992188, 98.5940246582031, 1200.0};
             double lefArmPoss[7] = {-33.4797897338867, 19.8418273925781, 5.25482177734375, -52.7240753173828, 81.5289916992188, -98.5940246582031, 1200.0};
             std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+7); //teoSim (+6) teo (+7)
             std::vector<double> leftArm(&lefArmPoss[0], &lefArmPoss[0]+7);
             std::vector<double> head(2,0.0);
-            jointsMoveAndWait(leftArm,rightArm,head);
+            jointsMoveAndWait(leftArm,rightArm,head,true);
         }
 
-        printf("Movement 10\n");
+        printf("[doing...] Captured movement (10)\n");
         {
             double rightArmPoss[7] = {31.2829513549805, -14.0421752929688, -10.7908630371094, 52.6362037658691, -81.5289916992188, 88.4885787963867, 1200.0};
             double lefArmPoss[7] = {-31.2829513549805, 14.0421752929688, 10.7908630371094, -52.6362037658691, 81.5289916992188, -88.4885787963867, 1200.0};
             std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+7); //teoSim (+6) teo (+7)
             std::vector<double> leftArm(&lefArmPoss[0], &lefArmPoss[0]+7);
             std::vector<double> head(2,0.0);
-            jointsMoveAndWait(leftArm,rightArm,head);
+            jointsMoveAndWait(leftArm,rightArm,head,true);
         }
 
-        printf("Close hands\n");
+        printf("[doing...] Closing hands\n");
         {
-            double rightArmPoss[7] = {31.2829513549805, -14.0421752929688, -10.7908630371094, 52.6362037658691, -81.5289916992188, 88.4885787963867, -1200.0};
-            double lefArmPoss[7] = {-31.2829513549805, 14.0421752929688, 10.7908630371094, -52.6362037658691, 81.5289916992188, -88.4885787963867, -1200.0};
+            double rightArmPoss[7] = {31.2829, -14.0421, -10.7908, 52.6362, -81.5289, 88.4885, -1200.0};
+            double lefArmPoss[7] = {-31.2829, 14.0421, 10.7908, -52.6362, 81.5289, -88.4885, -1200.0};
             std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+7); //teoSim (+6) teo (+7)
             std::vector<double> leftArm(&lefArmPoss[0], &lefArmPoss[0]+7);
             std::vector<double> head(2,0.0);
-            jointsMoveAndWait(leftArm,rightArm,head);
+            jointsMoveAndWait(leftArm,rightArm,head,true);
+        }
+        printf("Cartesian space movement...\n");
+        {
+            printf("waiting to do inward movement (2cm)...\n");
+            getchar();
+            moveTrayLinearly(0, -0.02); // hacia adentro
+            printf("waiting to do right movement (4cm)...\n");
+            getchar();
+            moveTrayLinearly(1, -0.04); // hacia derecha
+            printf("waiting to move to the center (4cm)...\n");
+            getchar();
+            moveTrayLinearly(1, 0.04); // hacia centro
+            printf("waiting to do left movement (4cm)... ");
+            getchar();
+            moveTrayLinearly(1, 0.04); // hacia izquierda
+            printf("waiting to move to the center (4cm)...\n");
+            getchar();
+            moveTrayLinearly(1, -0.04); // hacia centro
+            printf("waiting to move up (4cm)...\n");
+            getchar();
+            moveTrayLinearly(2, 0.04); // hacia arriba
+            printf("waiting to move down (4cm)...\n");
+            getchar();
+            moveTrayLinearly(2, -0.04); // hacia abajo
             getchar();
         }
 

@@ -35,6 +35,9 @@ private:
      virtual bool updateModule();
 
      /** Left Arm Device */
+     /** Axes number **/
+     int leftArmAxes;
+     /** Device **/
      yarp::dev::PolyDriver leftArmDevice;
      /** Encoders **/
      yarp::dev::IEncoders *leftArmIEncoders;
@@ -49,6 +52,9 @@ private:
      bool getLeftArmFwdKin(std::vector<double> *currentX);
 
      /** Right Arm Device */
+     /** Axes number **/
+     int rightArmAxes;
+     /** Device **/
      yarp::dev::PolyDriver rightArmDevice;
      /** Encoders **/
      yarp::dev::IEncoders *rightArmIEncoders;
@@ -63,6 +69,9 @@ private:
      bool getRightArmFwdKin(std::vector<double> *currentX);
 
      /** Head Device */
+     /** Axes number **/
+     int headAxes;
+     /** Device **/
      yarp::dev::PolyDriver headDevice;
      /** Head ControlMode2 Interface */
      yarp::dev::IControlMode2 *headIControlMode2;
@@ -79,7 +88,7 @@ private:
 
 
      /** Arm Joints Move And Wait */
-     bool jointsMoveAndWait(std::vector<double>& leftArm, std::vector<double>& rightArm, std::vector<double> &head);
+     bool jointsMoveAndWait(std::vector<double>& leftArm, std::vector<double>& rightArm, std::vector<double> &head, bool wait);
 
      std::vector<double> interpolate(double pta, double ptb, int res);
      bool moveTrayLinearly(int axis, double dist);
