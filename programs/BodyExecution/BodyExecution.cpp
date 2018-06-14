@@ -20,50 +20,7 @@ bool BodyExecution::configure(yarp::os::ResourceFinder &rf)
         ::exit(0);
     }
 
-    std::string bodyExecutionStr("/bodyExecution");
-
-
-    // ----- Configuring KDL Solver for right-arm -----
-    yarp::os::Property rightArmSolverOptions;
-    rightArmSolverOptions.fromConfigFile("/usr/local/share/teo-configuration-files/contexts/kinematics/rightArmKinematics.ini");
-    //rightArmSolverOptions.fromString(rf.toString());
-    rightArmSolverOptions.put("device","KdlSolver");
-    //rightArmSolverOptions.put("maxIter", 10000); // iterator configuration
-    //rightArmSolverOptions.put("eps", 1e-9);
-    rightArmSolverDevice.open(rightArmSolverOptions);
-
-    if( ! rightArmSolverDevice.isValid() )
-    {
-        printf("[ERROR] KDLSolver solver device not valid \n");
-        return false;
-    }
-
-    if( ! rightArmSolverDevice.view(rightArmICartesianSolver) )
-    {
-        printf("[ERROR] Could not view iCartesianSolver in KDLSolver \n");
-        return false;
-    } else printf("[success] Acquired rightArmICartesianSolver interface\n");
-
-
-    // ----- Configuring KDL Solver for left-arm -----
-
-    yarp::os::Property leftArmSolverOptions;
-    leftArmSolverOptions.fromConfigFile("/usr/local/share/teo-configuration-files/contexts/kinematics/leftArmKinematics.ini");
-    std::string solverStr = "KdlSolver";
-    leftArmSolverOptions.put("device",solverStr);
-    leftArmSolverDevice.open(leftArmSolverOptions);
-
-    if( ! leftArmSolverDevice.isValid() )
-    {
-        printf("[ERROR] solver device not valid: %s.\n",solverStr.c_str());
-        return false;
-    }
-
-    if( ! leftArmSolverDevice.view(leftArmICartesianSolver) )
-    {
-        printf("[ERROR] Could not view iCartesianSolver in: %s.\n",solverStr.c_str());
-        return false;
-    } else printf("[success] Acquired leftArmICartesianSolver interface\n");
+    std::string bodyExecutionStr("/bodyExecution");    
 
 
     // ------ HEAD -------
@@ -146,30 +103,109 @@ bool BodyExecution::configure(yarp::os::ResourceFinder &rf)
     } else printf("[success] Acquired rightArmIPositionControl2 interface\n");
 
 
-    //-- Set control modes
-    //int headAxes;
-    headIPositionControl2->getAxes(&headAxes);
-    std::vector<int> headControlModes(headAxes,VOCAB_CM_POSITION);
+    // Set control modes
+
+    headIPositionControl2->getAxes(&numHeadJoints);
+    std::vector<int> headControlModes(numHeadJoints,VOCAB_CM_POSITION);
     if(! headIControlMode2->setControlModes( headControlModes.data() )){
         printf("[warning] Problems setting position control mode of: head\n");
         return false;
     }
     
-    //int leftArmAxes;
-    leftArmIPositionControl2->getAxes(&leftArmAxes);
-    std::vector<int> leftArmControlModes(leftArmAxes,VOCAB_CM_POSITION);
+    leftArmIPositionControl2->getAxes(&numLeftArmJoints);
+    std::vector<int> leftArmControlModes(numLeftArmJoints,VOCAB_CM_POSITION);
     if(! leftArmIControlMode2->setControlModes( leftArmControlModes.data() )){
         printf("[warning] Problems setting position control mode of: left-arm\n");
         return false;
     }
 
-
-    rightArmIPositionControl2->getAxes(&rightArmAxes);
-    std::vector<int> rightArmControlModes(rightArmAxes,VOCAB_CM_POSITION);
+    rightArmIPositionControl2->getAxes(&numRightArmJoints);
+    std::vector<int> rightArmControlModes(numRightArmJoints,VOCAB_CM_POSITION);
     if(! rightArmIControlMode2->setControlModes(rightArmControlModes.data())){
         printf("[warning] Problems setting position control mode of: right-arm\n");
         return false;
     }
+
+    // ----- Configuring KDL Solver for right-arm -----
+
+    if( ! rightArmDevice.view(rightArmIControlLimits) ) {
+        printf("Could not view iControlLimits in rightArmDevice\n");
+        return false;
+    }
+
+    //  Getting the limits of each joint
+    printf("---- Joint limits of right-arm ----\n");
+    yarp::os::Bottle qrMin, qrMax;
+        for(unsigned int joint=0;joint<numRightArmJoints;joint++)
+        {
+            double min, max;
+            rightArmIControlLimits->getLimits(joint,&min,&max);
+            qrMin.addDouble(min);
+            qrMax.addDouble(max);
+            printf("Joint %d limits: [%f,%f]\n",joint,min,max);
+        }
+
+    yarp::os::Property rightArmSolverOptions;
+    rightArmSolverOptions.fromConfigFile("/usr/local/share/teo-configuration-files/contexts/kinematics/rightArmKinematics.ini");
+    rightArmSolverOptions.put("device","KdlSolver");
+    //rightArmSolverOptions.put("maxIter", 10000); // iterator configuration
+    //rightArmSolverOptions.put("eps", 1e-9);
+    rightArmSolverOptions.put("mins", yarp::os::Value::makeList(qrMin.toString().c_str()));
+    rightArmSolverOptions.put("maxs", yarp::os::Value::makeList(qrMax.toString().c_str()));
+    rightArmSolverDevice.open(rightArmSolverOptions);
+
+    if( ! rightArmSolverDevice.isValid() )
+    {
+        printf("[ERROR] KDLSolver solver device for right-arm is not valid \n");
+        return false;
+    }
+
+    if( ! rightArmSolverDevice.view(rightArmICartesianSolver) )
+    {
+        printf("[ERROR] Could not view iCartesianSolver in KDLSolver \n");
+        return false;
+    } else printf("[success] Acquired rightArmICartesianSolver interface\n");
+
+
+    // ----- Configuring KDL Solver for left-arm -----
+
+    if( ! leftArmDevice.view(leftArmIControlLimits) ) {
+        printf("Could not view iControlLimits in leftArmDevice\n");
+        return false;
+    }
+
+    //  Getting the limits of each joint
+    printf("---- Joint limits of left-arm ---- \n");
+    yarp::os::Bottle qlMin, qlMax;
+        for(unsigned int joint=0;joint<numLeftArmJoints;joint++)
+        {
+            double min, max;
+            leftArmIControlLimits->getLimits(joint,&min,&max);
+            qlMin.addDouble(min);
+            qlMax.addDouble(max);
+            printf("Joint %d limits: [%f,%f]\n",joint,min,max);
+        }
+
+    yarp::os::Property leftArmSolverOptions;
+    leftArmSolverOptions.fromConfigFile("/usr/local/share/teo-configuration-files/contexts/kinematics/leftArmKinematics.ini");
+    leftArmSolverOptions.put("device", "KdlSolver");
+    rightArmSolverOptions.put("mins", yarp::os::Value::makeList(qlMin.toString().c_str()));
+    rightArmSolverOptions.put("maxs", yarp::os::Value::makeList(qlMax.toString().c_str()));
+    leftArmSolverDevice.open(leftArmSolverOptions);
+
+    if( ! leftArmSolverDevice.isValid() )
+    {
+        printf("[ERROR] KDLSolver solver device for left-arm is not valid \n");
+        return false;
+    }
+
+    if( ! leftArmSolverDevice.view(leftArmICartesianSolver) )
+    {
+        printf("[ERROR] Could not view iCartesianSolver in KDLSolver\n");
+        return false;
+    } else printf("[success] Acquired leftArmICartesianSolver interface\n");
+
+
     return this->start();  //-- Start the thread (calls run).
 }
 
@@ -283,7 +319,6 @@ bool BodyExecution::jointsMoveAndWait(std::vector<double>& leftArm, std::vector<
         headIPositionControl2->checkMotionDone(&doneHead);
     }
 */
-    //printf("\n");
     return true;
 }
 
@@ -454,10 +489,10 @@ bool BodyExecution::moveTrayLinearly(int axis, double dist)
             printf("%f ",leftArmVector[i]);
         printf(")\n ");
 
-        std::vector<double> rightArmCurrentQ(rightArmAxes);
-        std::vector<double> rightArmDesireQ(rightArmAxes);
-        std::vector<double> leftArmCurrentQ(leftArmAxes);
-        std::vector<double> leftArmDesireQ(leftArmAxes);
+        std::vector<double> rightArmCurrentQ(numRightArmJoints);
+        std::vector<double> rightArmDesireQ(numRightArmJoints);
+        std::vector<double> leftArmCurrentQ(numLeftArmJoints);
+        std::vector<double> leftArmDesireQ(numLeftArmJoints);
 
         // initialize to 0
         rightArmCurrentQ.clear();
@@ -499,7 +534,7 @@ bool BodyExecution::moveTrayLinearly(int axis, double dist)
         std::vector<double> rightArm(&rightArmDesireQ[0], &rightArmDesireQ[0]+7); //teoSim (+6) teo (+7)
         std::vector<double> leftArm(&leftArmDesireQ[0], &leftArmDesireQ[0]+7);
 
-        jointsMoveAndWait(leftArm, rightArm, head, true);
+        jointsMoveAndWait(leftArm, rightArm, head, false);
 
     }
 
@@ -622,10 +657,9 @@ void BodyExecution::run()
             std::vector<double> head(2,0.0);
             jointsMoveAndWait(leftArm,rightArm,head,true);
         }
-        printf("Cartesian space movement...\n");
+        printf("Cartesian space movement...(press a key to continue)\n");
         {
             printf("waiting to do inward movement (2cm)...\n");
-            getchar();
             moveTrayLinearly(0, -0.02); // hacia adentro
             printf("waiting to do right movement (4cm)...\n");
             getchar();

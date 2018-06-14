@@ -29,9 +29,6 @@ int main(int argc, char **argv) {
     yarp::os::ResourceFinder rf;
     rf.setVerbose(true);
     rf.setDefaultContext("bodyExecution");
-    //rf.setDefaultConfigFile("bodyExecution.ini");
-    //rf.setDefaultConfigFile("/usr/local/share/teo-configuration-files/contexts/kinematics/leftArmKinematics.ini");
-    //rf.setDefaultConfigFile("/usr/local/share/teo-configuration-files/contexts/kinematics/rightArmKinematics.ini");
     rf.configure(argc, argv);
 
     teo::BodyExecution mod;

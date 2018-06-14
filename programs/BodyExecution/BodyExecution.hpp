@@ -5,7 +5,6 @@
 
 #include <yarp/os/all.h>
 #include <yarp/dev/all.h>
-#include <fstream>
 #include "ICartesianSolver.h"
 
 #define DEFAULT_ROBOT "/teoSim" // teo or teoSim
@@ -36,7 +35,7 @@ private:
 
      /** Left Arm Device */
      /** Axes number **/
-     int leftArmAxes;
+     int numRightArmJoints;
      /** Device **/
      yarp::dev::PolyDriver leftArmDevice;
      /** Encoders **/
@@ -45,6 +44,8 @@ private:
      yarp::dev::IControlMode2 *leftArmIControlMode2;
      /** Left Arm PositionControl2 Interface */
      yarp::dev::IPositionControl2 *leftArmIPositionControl2;
+     /** Left Arm ControlLimits2 Interface */
+     yarp::dev::IControlLimits *leftArmIControlLimits;
      /** Solver device **/
      yarp::dev::PolyDriver leftArmSolverDevice;
      roboticslab::ICartesianSolver *leftArmICartesianSolver;
@@ -53,7 +54,7 @@ private:
 
      /** Right Arm Device */
      /** Axes number **/
-     int rightArmAxes;
+     int numLeftArmJoints;
      /** Device **/
      yarp::dev::PolyDriver rightArmDevice;
      /** Encoders **/
@@ -62,6 +63,8 @@ private:
      yarp::dev::IControlMode2 *rightArmIControlMode2;
      /** Right Arm PositionControl2 Interface */
      yarp::dev::IPositionControl2 *rightArmIPositionControl2;
+     /** Right Arm ControlLimits2 Interface */
+     yarp::dev::IControlLimits *rightArmIControlLimits;
      /** Solver device **/
      yarp::dev::PolyDriver rightArmSolverDevice;
      roboticslab::ICartesianSolver *rightArmICartesianSolver;
@@ -70,7 +73,7 @@ private:
 
      /** Head Device */
      /** Axes number **/
-     int headAxes;
+     int numHeadJoints;
      /** Device **/
      yarp::dev::PolyDriver headDevice;
      /** Head ControlMode2 Interface */
