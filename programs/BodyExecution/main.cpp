@@ -2,39 +2,36 @@
 
 /**
  *
- * @ingroup teo-bimanipulation_programs
- * \defgroup exampleProgram
+ * @ingroup teo-self-presentation_programs
+ * \defgroup bodyExecution bodyExecution
  *
- * @brief Creates an instance of roboticslab::ExampleProgram
+ * @brief Creates an instance of teo::bodyExecution.
  *
- * @section exampleProgram_legal Legal
+ * @section bodyExecution_legal Legal
  *
- * Copyright: 2018 (C) Universidad Carlos III de Madrid
+ * Copyright: 2017 (C) Universidad Carlos III de Madrid
  *
- * Author: Raul de Santos Rico
+ * Author: <a href="http://roboticslab.uc3m.es/roboticslab/people/r-de-santos">Raul de Santos Rico</a>
  *
  * CopyPolicy: This program is free software; you can redistribute it and/or modify
- * it under the terms of the LGPLv2.1
+ * it under the terms of the GNU Lesser General Public License 3.0 or later
  *
  * <hr>
  *
- * This file can be edited at exampleProgram
+ * This file can be edited at bodyExecution
  *
  */
 
-#include <yarp/os/all.h>
-
-#include "ExampleProgram.hpp"
+#include "BodyExecution.hpp"
 
 int main(int argc, char **argv) {
 
     yarp::os::ResourceFinder rf;
     rf.setVerbose(true);
-    rf.setDefaultContext("exampleProgram");
-    rf.setDefaultConfigFile("exampleProgram.ini");
+    rf.setDefaultContext("bodyExecution");
     rf.configure(argc, argv);
 
-    roboticslab::ExampleProgram mod;
+    teo::BodyExecution mod;
     if(rf.check("help")) {
         return mod.runModule(rf);
     }
@@ -49,5 +46,6 @@ int main(int argc, char **argv) {
     } else printf("[ok]\n");
 
     return mod.runModule(rf);
+
 }
 

@@ -13,6 +13,12 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake
                               ${CMAKE_SOURCE_DIR}/cmake/find-modules
                               ${CMAKE_SOURCE_DIR}/cmake/ycm-modules)
 
+### options: cpp libraries
+#option(ENABLE_ExampleLibrary "Choose if you want to compile ExampleLibrary" TRUE)
+
+### options: cpp programs
+option(ENABLE_bodyExecution "Choose if you want to compile bodyExecution" TRUE)
+
 # Bootstrap YCM.
 # https://github.com/robotology/ycm/issues/118
 set(YCM_TAG v0.2.2)
