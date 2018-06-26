@@ -93,7 +93,7 @@ private:
      /** Arm Joints Move And Wait */
      bool jointsMoveAndWait(std::vector<double>& leftArm, std::vector<double>& rightArm, std::vector<double> &head, bool wait);
 
-     std::vector<double> interpolate(double pta, double ptb, int res);
+     std::vector<std::vector<double> > interpolate(std::vector<double> startPose, std::vector<double> endPose, int res);
      bool moveTrayLinearly(int axis, double dist);
 
      /** State */

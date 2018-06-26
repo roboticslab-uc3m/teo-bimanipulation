@@ -401,17 +401,24 @@ bool BodyExecution::getLeftArmFwdKin(std::vector<double> *currentX)
 
 /************************************************************************/
 
-std::vector<double> BodyExecution::interpolate(double pta, double ptb, int res)
+std::vector<std::vector<double> > BodyExecution::interpolate(std::vector<double> startPose, std::vector<double> endPose, int res)
 {
     printf("------ Interpolation results ------\n");
-    std::vector<double> path(res);
-    double factor = (ptb - pta)/res;
-    for (int i = 0; i < res; i++)
-    {
-        path[i] = ((i+1) * factor) + pta;
-        printf("%f ", path[i]);
+    // vector de vectores: se trata de un vector que contiene el conjunto de vectores
+    std::vector<std::vector<double> > path (res, std::vector<double>(6)); //path (poses)
+    std::vector<double> factor(6);
+    for(int i=0; i<6;i++){
+        factor[i] = (endPose[i]-startPose[i])/res;
     }
-    printf("\n");
+
+    for(int v=0; v<res; v++){
+        printf("pose (%d): (", v+1);
+        for(int i=0; i<6; i++){
+            path[v][i]=((v+1)*factor[i]) + startPose[i];
+            printf("%f ",path[v][i]);
+        }
+        printf(")\n ");
+    }
 
     printf("------------------------------------\n");
     getchar();
@@ -425,119 +432,141 @@ std::vector<double> BodyExecution::interpolate(double pta, double ptb, int res)
     axis = 1 -> y
     axis = 2 -> z
 */
+
 bool BodyExecution::moveTrayLinearly(int axis, double dist)
 {
     int status;
-    int res = 20; // interpolate resolution
-    std::vector<double> rightArmVector;
-    std::vector<double> leftArmVector;
+    int res = 10; // interpolate resolution
 
-    double rightArmPto; // origin point
-    double leftArmPto;
-    double rightArmPtd; // destination point
-    double leftArmPtd;
+    std::vector<double> rightArmPoseOrig(6); // origin pose
+    std::vector<double> rightArmPoseDest(6); // destination pose
+
+    std::vector<double> leftArmPoseOrig(6); // origin pose
+    std::vector<double> leftArmPoseDest(6); // destination pose
 
     // Resulting paths:
-    std::vector<double> rightArmPath(res);
-    std::vector<double> leftArmPath(res);
+    std::vector<std::vector<double> > rightArmPath(res, std::vector<double>(6));
+    std::vector<std::vector<double> > leftArmPath(res, std::vector<double>(6));
+
 
     // Showing fordward kinematic
-    if(! getRightArmFwdKin(&rightArmVector))
-        printf("[ERROR] Doing Forward Kinematic...\n");
+    // * right-arm
+    if(! getRightArmFwdKin(&rightArmPoseOrig))
+        printf("[ERROR] Doing Forward Kinematic of right-arm...\n");
 
-    printf("-> FK of right-arm: (");
-    for(int i=0; i<rightArmVector.size(); i++)
-        printf("%f ",rightArmVector[i]);
+    printf("-> Origin Pose of right-arm: (");
+    for(int i=0; i<rightArmPoseOrig.size(); i++)
+        printf("%f ",rightArmPoseOrig[i]);
     printf(")\n ");
-
-    if(! getLeftArmFwdKin(&leftArmVector))
-        printf("[ERROR] Doing Forward Kinematic...\n");
-
-    printf("> FK of left-arm: (");
-    for(int i=0; i<leftArmVector.size(); i++)
-        printf("%f ",leftArmVector[i]);
-    printf(")\n ");
-
-    // axis selection
-    rightArmPto = rightArmVector[axis]; // pto origin
-    leftArmPto = leftArmVector[axis]; // pto origin
 
     // Calculating new destination point
-    rightArmPtd = rightArmPto + dist; // pto destination = pto origin + dist
-    leftArmPtd = leftArmPto + dist; // pto destination = pto origin + dist
+    rightArmPoseDest = rightArmPoseOrig;
+    rightArmPoseDest[axis] = rightArmPoseOrig[axis] + dist; // pto destination = pto origin + dist
 
-    // Interpolation
-    printf("> Interpolating right-arm path: \n");
-    rightArmPath = interpolate(rightArmPto,rightArmPtd,res);
-    printf("> Interpolating left-arm path: \n");
-    leftArmPath = interpolate(leftArmPto,leftArmPtd,res);
+    printf("-> Destination Pose of right-arm : (");
+    for(int i=0; i<rightArmPoseDest.size(); i++)
+        printf("%f ",rightArmPoseDest[i]);
+    printf(")\n ");
 
-    // move arms in the cartesian space
-    for (int i = 0; i < res; i++)
-    {
-        printf("-------- Position: %d -------\n", i+1);
-        rightArmVector[axis] = rightArmPath[i]; // new point obtained by interpolation
-        leftArmVector[axis] = leftArmPath[i]; // new point obtained by interpolation
+    // Interpolation: nos devolverá un vector (path) con todos los vectores de poses
+    printf("> Interpolating right-arm path (poses): \n");
+    rightArmPath = interpolate(rightArmPoseOrig, rightArmPoseDest, res);
 
-        printf("* Position of RIGHT-ARMS in cartesian space: (");
-        for(int i=0; i<rightArmVector.size(); i++)
-            printf("%f ",rightArmVector[i]);
-        printf(")\n ");
+    std::vector<double> rightArmCurrentQ(numRightArmJoints);
+    std::vector<double> rightArmDesireQ(numRightArmJoints);
 
-        printf("* Position of LEFT-ARMS in cartesian space: (");
-        for(int i=0; i<leftArmVector.size(); i++)
-            printf("%f ",leftArmVector[i]);
-        printf(")\n ");
+    // * left-arm
+    if(! getLeftArmFwdKin(&leftArmPoseOrig))
+        printf("[ERROR] Doing Forward Kinematic of left-arm...\n");
 
-        std::vector<double> rightArmCurrentQ(numRightArmJoints);
-        std::vector<double> rightArmDesireQ(numRightArmJoints);
-        std::vector<double> leftArmCurrentQ(numLeftArmJoints);
-        std::vector<double> leftArmDesireQ(numLeftArmJoints);
+    printf("-> Origin Pose of left-arm: (");
+    for(int i=0; i<leftArmPoseOrig.size(); i++)
+        printf("%f ",leftArmPoseOrig[i]);
+    printf(")\n ");
+
+    // Calculating new destination point
+    leftArmPoseDest = leftArmPoseOrig;
+    leftArmPoseDest[axis] = leftArmPoseOrig[axis] + dist; // pto destination = pto origin + dist
+
+    printf("-> Destination Pose of left-arm : (");
+    for(int i=0; i<leftArmPoseDest.size(); i++)
+        printf("%f ",leftArmPoseDest[i]);
+    printf(")\n ");
+
+    // Interpolation: nos devolverá un vector (path) con todos los vectores de poses
+    printf("> Interpolating left-arm path (poses): \n");
+    leftArmPath = interpolate(leftArmPoseOrig, leftArmPoseDest, res);
+
+    std::vector<double> leftArmCurrentQ(numRightArmJoints);
+    std::vector<double> leftArmDesireQ(numRightArmJoints);
+
+
+
+    // MAIN LOOP
+    for(int i=0; i<res; i++){
 
         // initialize to 0
         rightArmCurrentQ.clear();
         rightArmDesireQ.clear();
         leftArmCurrentQ.clear();
-        leftArmDesireQ.clear();
+        leftArmCurrentQ.clear();
 
+        // -- Right-Arm
         // currentQ: pequeña ayuda que le das al solver sobre la posición inicial en posicion articular
         if ( ! rightArmIEncoders->getEncoders( rightArmCurrentQ.data() ) ){
             printf("[ERROR] Failed getEncoders of right-arm\n");
             return false;
         }
 
-        if ( ! rightArmICartesianSolver->invKin(rightArmVector, rightArmCurrentQ, rightArmDesireQ) )    {
+        /*
+        std::vector<double> rightArmPose = rightArmPath[i];
+        printf("-> pose %d of right-arm: (", i+1);
+        for(int i=0; i<rightArmPose.size(); i++)
+            printf("%f ",rightArmPose[i]);
+        printf(")\n ");
+        */
+
+        // inverse kinematic
+        if ( ! rightArmICartesianSolver->invKin(rightArmPath[i], rightArmCurrentQ, rightArmDesireQ) )    {
             printf("[ERROR] invKin failed.\n");
         }
 
-        printf("-> IK of right-arm: (");
+        printf("-> (IK) Joint position (%d) of right-arm: (", i+1);
         for(int i=0; i<rightArmDesireQ.size(); i++)
             printf("%f ",rightArmDesireQ[i]);
         printf(")\n ");
 
-        // currentQ: pequeña ayuda que le das al solver sobre la posición inicial en posicion articular
+        // -- Left-Arm
+
         if ( ! leftArmIEncoders->getEncoders( leftArmCurrentQ.data() ) ){
             printf("[ERROR] Failed getEncoders of left-arm\n");
             return false;
         }
 
-        if ( ! leftArmICartesianSolver->invKin(leftArmVector, leftArmCurrentQ, leftArmDesireQ) )    {
+        std::vector<double> leftArmPose = leftArmPath[i];
+        /*
+        printf("-> pose %d of left-arm: (", i+1);
+        for(int i=0; i<leftArmPose.size(); i++)
+            printf("%f ",leftArmPose[i]);
+        printf(")\n ");
+        */
+
+        // inverse kinematic
+        if ( ! leftArmICartesianSolver->invKin(leftArmPath[i], leftArmCurrentQ, leftArmDesireQ) )    {
             printf("[ERROR] invKin failed.\n");
         }
-
-        printf("-> IK of left-arm: (");
+        printf("-> (IK) Joint position (%d) of left-arm: (", i+1);
         for(int i=0; i<leftArmDesireQ.size(); i++)
             printf("%f ",leftArmDesireQ[i]);
-        printf(")\n\n ");
+        printf(")\n ");
+
 
         std::vector<double> head(2,0.0);
         std::vector<double> rightArm(&rightArmDesireQ[0], &rightArmDesireQ[0]+7); //teoSim (+6) teo (+7)
         std::vector<double> leftArm(&leftArmDesireQ[0], &leftArmDesireQ[0]+7);
 
-        jointsMoveAndWait(leftArm, rightArm, head, false);
-
+        jointsMoveAndWait(leftArm, rightArm, head, true);
     }
-
     return true;
 }
 
