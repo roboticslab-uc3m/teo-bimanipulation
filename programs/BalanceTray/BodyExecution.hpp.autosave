@@ -1,14 +1,11 @@
 // -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*-
 
-#ifndef __FOLLOW_ME_ARM_SWING_HPP__
-#define __FOLLOW_ME_ARM_SWING_HPP__
-
 #include <yarp/os/all.h>
 #include <yarp/dev/all.h>
 #include "ICartesianSolver.h"
 
 #define DEFAULT_ROBOT "/teoSim" // teo or teoSim
-
+#include "ColorDebug.h"
 
 using namespace yarp::os;
 

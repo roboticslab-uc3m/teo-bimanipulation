@@ -17,7 +17,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake
 #option(ENABLE_ExampleLibrary "Choose if you want to compile ExampleLibrary" TRUE)
 
 ### options: cpp programs
-option(ENABLE_bodyExecution "Choose if you want to compile bodyExecution" TRUE)
+option(ENABLE_balanceTray "Choose if you want to compile balanceTray demostration" TRUE)
 
 # Bootstrap YCM.
 # https://github.com/robotology/ycm/issues/118

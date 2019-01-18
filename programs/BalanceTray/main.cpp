@@ -2,12 +2,12 @@
 
 /**
  *
- * @ingroup teo-self-presentation_programs
- * \defgroup bodyExecution bodyExecution
+ * @ingroup teo_bimanipulation_programs
+ * \defgroup balanceTray balanceTray
  *
- * @brief Creates an instance of teo::bodyExecution.
+ * @brief Creates an instance of teo::BalanceTray.
  *
- * @section bodyExecution_legal Legal
+ * @section balanceTray Legal
  *
  * Copyright: 2017 (C) Universidad Carlos III de Madrid
  *
@@ -22,16 +22,17 @@
  *
  */
 
-#include "BodyExecution.hpp"
+#include "BalanceTray.hpp"
 
 int main(int argc, char **argv) {
 
     yarp::os::ResourceFinder rf;
     rf.setVerbose(true);
-    rf.setDefaultContext("bodyExecution");
+    rf.setDefaultContext("balanceTray");
+    //rf.setDefaultConfigFile("balanceTray.ini");
     rf.configure(argc, argv);
 
-    teo::BodyExecution mod;
+    teo::BalanceTray mod;
     if(rf.check("help")) {
         return mod.runModule(rf);
     }
@@ -39,6 +40,7 @@ int main(int argc, char **argv) {
     printf("Run \"%s --help\" for options.\n",argv[0]);
     printf("%s checking for yarp network... ",argv[0]);
     fflush(stdout);
+
     yarp::os::Network yarp;
     if (!yarp.checkNetwork()) {
         fprintf(stderr,"[fail]\n%s found no yarp network (try running \"yarpserver &\"), bye!\n",argv[0]);

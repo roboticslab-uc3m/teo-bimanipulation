@@ -2,4 +2,4 @@
 # Authors: Raul de Santos Rico
 # CopyPolicy: Released under the terms of the LGPLv2.1
 
-add_subdirectory(BodyExecution)
+add_subdirectory(BalanceTray)
