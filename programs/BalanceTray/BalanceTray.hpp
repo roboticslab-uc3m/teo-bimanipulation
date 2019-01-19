@@ -41,6 +41,8 @@ namespace teo
             yarp::dev::IControlMode2 *rightArmIControlMode2;
             /** Right Arm PositionControl2 Interface */
             yarp::dev::IPositionControl2 *rightArmIPositionControl2;
+            /** Right Arm PositionDirect Interface */
+            yarp::dev::IPositionDirect *rightArmIPositionDirect;
             /** Right Arm ControlLimits2 Interface */
             yarp::dev::IControlLimits *rightArmIControlLimits;
             /** Solver device **/
@@ -60,6 +62,8 @@ namespace teo
             yarp::dev::IControlMode2 *leftArmIControlMode2;
             /** Left Arm PositionControl2 Interface */
             yarp::dev::IPositionControl2 *leftArmIPositionControl2;
+            /** Left Arm PositionDirect Interface */
+            yarp::dev::IPositionDirect *leftArmIPositionDirect;
             /** Left Arm ControlLimits2 Interface */
             yarp::dev::IControlLimits *leftArmIControlLimits;
             /** Solver device **/
@@ -68,9 +72,12 @@ namespace teo
             /** Forward Kinematic function **/
             bool getLeftArmFwdKin(std::vector<double> *currentX);
 
+            /** Configure functions **/
+            bool configArmsToPosition(double sp, double acc);
+            bool configArmsToPositionDirect();
 
-            /** State */
-            int state;
+            /** Movement functions **/
+            bool moveJointsInPosition(std::vector<double>& leftArm, std::vector<double> &rightArm);
 
             /** movement finished */
             bool done;
