@@ -18,7 +18,7 @@
  *
  * <hr>
  *
- * This file can be edited at bodyExecution
+ * This file can be edited at balanceTray
  *
  */
 
@@ -29,7 +29,6 @@ int main(int argc, char **argv) {
     yarp::os::ResourceFinder rf;
     rf.setVerbose(true);
     rf.setDefaultContext("balanceTray");
-    //rf.setDefaultConfigFile("balanceTray.ini");
     rf.configure(argc, argv);
 
     teo::BalanceTray mod;

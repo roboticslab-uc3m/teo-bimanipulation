@@ -17,7 +17,7 @@ namespace teo
  * @brief Balance Tray Core.
  *
  */
-   class BalanceTray : public yarp::os::RFModule, public yarp::os::PortReader, public yarp::os::Thread
+   class BalanceTray : public yarp::os::RFModule, public yarp::os::Thread
     {
         public:
              virtual bool configure(yarp::os::ResourceFinder &rf);
@@ -78,12 +78,8 @@ namespace teo
             /** Input port from dialogue manager */
             yarp::os::RpcServer inDialogPort;
 
-            /** Treats data received from input port from speech recognition */
-            //virtual bool read(yarp::os::ConnectionReader& connection);
-
             /** Thread run */
             virtual void run();
-
 
 
      }; // class BalanceTray

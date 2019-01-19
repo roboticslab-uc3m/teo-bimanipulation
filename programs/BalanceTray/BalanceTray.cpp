@@ -210,6 +210,7 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
 }
 
 /************************************************************************/
+
 bool BalanceTray::getRightArmFwdKin(std::vector<double> *currentX)
 {
 
