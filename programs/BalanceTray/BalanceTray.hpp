@@ -77,7 +77,8 @@ namespace teo
             bool configArmsToPositionDirect();
 
             /** Movement functions **/
-            bool moveJointsInPosition(std::vector<double>& leftArm, std::vector<double> &rightArm);
+            bool moveJointsInPosition(std::vector<double> &rightArm, std::vector<double>& leftArm);
+            bool moveJointsInPositionDirect(std::vector<double> &rightArm, std::vector<double> &leftArm);
 
             /** movement finished */
             bool done;

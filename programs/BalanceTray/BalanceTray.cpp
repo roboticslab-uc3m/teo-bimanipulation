@@ -365,9 +365,10 @@ bool BalanceTray::configArmsToPositionDirect(){
 
         return true;
 }
-/************************************************************************/
 
-bool BalanceTray::moveJointsInPosition(std::vector<double>& leftArm, std::vector<double> &rightArm)
+/******************* MODES TO MOVE THE JOINTS **************************/
+
+bool BalanceTray::moveJointsInPosition(std::vector<double> &rightArm, std::vector<double>& leftArm)
 {
     // -- checking movement done...
     bool doneRight = false;
@@ -396,6 +397,23 @@ bool BalanceTray::moveJointsInPosition(std::vector<double>& leftArm, std::vector
 
     return true;
 }
+
+/************************************************************************/
+
+bool BalanceTray::moveJointsInPositionDirect(std::vector<double> &rightArm, std::vector<double> &leftArm){
+    if(!rightArmIPositionDirect->setPositions(rightArm.data())){
+        CD_ERROR("Problems setting new reference point for right-arm axes.\n");
+        return false;
+    }
+
+    if(!leftArmIPositionDirect->setPositions(leftArm.data())){
+        CD_ERROR("Problems setting new reference point for left-arm axes.\n");
+        return false;
+    }
+    return true;
+}
+
+/************************************************************************/
 
 void BalanceTray::run()
 {
