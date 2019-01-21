@@ -21,28 +21,21 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
         ::exit(0);
     }
 
-    std::string bodyExecutionStr("/balanceTray");
+    std::string balanceTrayStr("/balanceTray");
 
     // ------ RIGHT ARM -------
 
     yarp::os::Property rightArmOptions;
     rightArmOptions.put("device","remote_controlboard");
     rightArmOptions.put("remote",robot+"/rightArm");
-    rightArmOptions.put("local",bodyExecutionStr+robot+"/rightArm");
+    rightArmOptions.put("local",balanceTrayStr+robot+"/rightArm");
     rightArmDevice.open(rightArmOptions);
     if(!rightArmDevice.isValid()) {
       CD_ERROR("robot rightArm device not available.\n");
       rightArmDevice.close();
       yarp::os::Network::fini();
       return false;
-    }
-
-    // connecting our device with "IEncoders" interface
-    if (!rightArmDevice.view(rightArmIEncoders) ) {
-        CD_ERROR("Problems acquiring rightArmIEncoders interface\n");
-        return false;
-    } else
-        CD_SUCCESS("Acquired rightArmIEncoders interface\n");
+    }    
 
     if (!rightArmDevice.view(rightArmIControlMode2) ) { // connecting our device with "control mode 2" interface, initializing which control mode we want (position)
         CD_ERROR("Problems acquiring rightArmIControlMode2 interface\n");
@@ -57,12 +50,25 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     } else
         CD_SUCCESS("Acquired rightArmIPositionControl2 interface\n");
 
+    // connecting our device with "IEncoders" interface
+
+    if (!rightArmDevice.view(rightArmIEncoders) ) {
+        CD_ERROR("Problems acquiring rightArmIEncoders interface\n");
+        return false;
+    }
+    else
+    {
+        CD_SUCCESS("Acquired leftArmIEncoders interface\n");
+        if(!rightArmIPositionControl2->getAxes(&numRightArmJoints))
+            CD_ERROR("Problems acquiring numRightArmJoints\n");
+    }
+
     // ------ LEFT ARM -------
 
     yarp::os::Property leftArmOptions;
     leftArmOptions.put("device","remote_controlboard");
     leftArmOptions.put("remote",robot+"/leftArm");
-    leftArmOptions.put("local",bodyExecutionStr+robot+"/leftArm");
+    leftArmOptions.put("local",balanceTrayStr+robot+"/leftArm");
     leftArmDevice.open(leftArmOptions);
     if(!leftArmDevice.isValid()) {
       CD_ERROR("robot leftArm device not available.\n");
@@ -70,12 +76,6 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
       yarp::os::Network::fini();
       return false;
     }
-
-    if (!leftArmDevice.view(leftArmIEncoders) ) { // connecting our device with "IEncoders" interface
-        CD_ERROR("Problems acquiring leftArmIEncoders interface\n");
-        return false;
-    } else
-        CD_SUCCESS("Acquired leftArmIEncoders interface\n");
 
     if (!leftArmDevice.view(leftArmIControlMode2) ) { // connecting our device with "control mode 2" interface, initializing which control mode we want (position)
         CD_ERROR("Problems acquiring leftArmIControlMode2 interface\n");
@@ -88,6 +88,18 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
         return false;
     } else
         CD_SUCCESS("Acquired leftArmIPositionControl2 interface\n");
+
+    // connecting our device with "IEncoders" interface
+
+    if (!leftArmDevice.view(leftArmIEncoders) ) { // connecting our device with "IEncoders" interface
+        CD_ERROR("Problems acquiring leftArmIEncoders interface\n");
+        return false;
+    } else {
+        CD_SUCCESS("Acquired leftArmIEncoders interface\n");
+        if(!leftArmIPositionControl2->getAxes(&numLeftArmJoints))
+            CD_ERROR("Problems acquiring numLeftArmJoints\n");
+    }
+
 
     // ----- Configuring KDL Solver for right-arm -----
 
@@ -184,6 +196,9 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     rightArmICartesianSolver->appendLink(vtwist_right_N_T);
     leftArmICartesianSolver->appendLink(vtwist_left_N_T);
 
+    // prepare position
+    preparePosition();
+
     CD_INFO_NO_HEADER("Current FK of TCP in both arms:\n");
 
     // * left-arm
@@ -191,7 +206,7 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     if(! getLeftArmFwdKin(&leftArmCurrentPose))
         CD_ERROR("Doing Forward Kinematic of left-arm\n");
 
-    CD_INFO_NO_HEADER("Left-arm: [");
+    CD_INFO_NO_HEADER(" Left-arm: [");
     for(int i=0; i<leftArmCurrentPose.size(); i++)
         CD_INFO_NO_HEADER("%f ",leftArmCurrentPose[i]);
     printf("]\n ");
@@ -201,10 +216,10 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     if(! getRightArmFwdKin(&rightArmCurrentPose))
         CD_ERROR("Doing Forward Kinematic of right-arm\n");
 
-    CD_INFO_NO_HEADER("-> Origin Pose of right-arm: (");
+    CD_INFO_NO_HEADER("Right-arm: [");
     for(int i=0; i<rightArmCurrentPose.size(); i++)
         CD_INFO_NO_HEADER("%f ",rightArmCurrentPose[i]);
-    printf(")\n ");
+    printf("]\n ");
 
     return true;
 }
@@ -241,14 +256,13 @@ bool BalanceTray::updateModule()
 
 bool BalanceTray::getRightArmFwdKin(std::vector<double> *currentX)
 {
-
-    /** ----- Obtain current joint position ----- **/
-
+    /** ----- Obtain current joint position ----- **/    
     std::vector<double> currentQ(numRightArmJoints);
     if ( ! rightArmIEncoders->getEncoders( currentQ.data() ) ){
         CD_ERROR("ForgetEncoders failed\n");
         return false;
     }
+
 
     /** ----- Obtain current cartesian position ---------- **/
     if ( ! rightArmICartesianSolver->fwdKin(currentQ, *currentX) )    {
@@ -261,7 +275,6 @@ bool BalanceTray::getRightArmFwdKin(std::vector<double> *currentX)
 
 bool BalanceTray::getLeftArmFwdKin(std::vector<double> *currentX)
 {
-
     /** ----- Obtain current joint position ----- **/
     std::vector<double> currentQ(numLeftArmJoints);
     if ( ! leftArmIEncoders->getEncoders( currentQ.data() ) ){
@@ -300,14 +313,14 @@ bool BalanceTray::configArmsToPosition(double sp, double acc){
     } else
         CD_SUCCESS_NO_HEADER("Acquired leftArmIPositionControl2 interface\n");
 
-    rightArmIPositionControl2->getAxes(&numRightArmJoints);
+
     std::vector<int> rightArmControlModes(numRightArmJoints,VOCAB_CM_POSITION);
     if(! rightArmIControlMode2->setControlModes(rightArmControlModes.data())){
         CD_ERROR("Problems setting position control mode of: right-arm\n");
         return false;
     }
 
-    leftArmIPositionControl2->getAxes(&numLeftArmJoints);
+
     std::vector<int> leftArmControlModes(numLeftArmJoints,VOCAB_CM_POSITION);
     if(! leftArmIControlMode2->setControlModes( leftArmControlModes.data() )){
         CD_ERROR("Problems setting position control mode of: left-arm\n");
@@ -349,14 +362,13 @@ bool BalanceTray::configArmsToPositionDirect(){
         } else
             CD_SUCCESS_NO_HEADER("Acquired leftArmIPositionDirect interface\n");
 
-        rightArmIPositionDirect->getAxes(&numRightArmJoints);
+
         std::vector<int> rightArmControlModes(numRightArmJoints,VOCAB_CM_POSITION_DIRECT);
         if(! rightArmIControlMode2->setControlModes(rightArmControlModes.data())){
             CD_ERROR("Problems setting POSITION DIRECT mode of: right-arm\n");
             return false;
         }
 
-        leftArmIPositionDirect->getAxes(&numLeftArmJoints);
         std::vector<int> leftArmControlModes(numLeftArmJoints,VOCAB_CM_POSITION_DIRECT);
         if(! leftArmIControlMode2->setControlModes(leftArmControlModes.data())){
             CD_ERROR("Problems setting POSITION DIRECT mode of: left-arm\n");
@@ -414,6 +426,16 @@ bool BalanceTray::moveJointsInPositionDirect(std::vector<double> &rightArm, std:
 }
 
 /************************************************************************/
+
+void BalanceTray::preparePosition(){
+    // Prepare the last position
+        CD_INFO_NO_HEADER("Initial position...\n");
+        double rightArmPoss[7] = {31.283699, -14.04759, -10.804402, 60.000894, -75, 88.479388};
+        double leftArmPoss[7] = {-31.283699, 14.04759, 10.804402, -60.000894, 75, -88.479388};
+        std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+7); //teoSim (+6) teo (+7)
+        std::vector<double> leftArm(&leftArmPoss[0], &leftArmPoss[0]+7);
+        moveJointsInPosition(rightArm, leftArm);
+}
 
 void BalanceTray::run()
 {
