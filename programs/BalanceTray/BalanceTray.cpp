@@ -251,6 +251,31 @@ bool BalanceTray::updateModule()
 
 /************************************************************************/
 
+std::vector<std::vector<double> > BalanceTray::interpolate(std::vector<double> startPose, std::vector<double> endPose, int res)
+{
+    printf("------ Interpolation results ------\n");
+    // vector de vectores: se trata de un vector que contiene el conjunto de vectores
+    std::vector<std::vector<double> > path (res, std::vector<double>(6)); //path (poses)
+    std::vector<double> factor(6);
+    for(int i=0; i<6;i++){
+        factor[i] = (endPose[i]-startPose[i])/res;
+    }
+
+    for(int v=0; v<res; v++){
+        CD_INFO_NO_HEADER("pose (%d): (", v+1);
+        for(int i=0; i<6; i++){
+            path[v][i]=((v+1)*factor[i]) + startPose[i];
+            CD_INFO_NO_HEADER("%f ",path[v][i]);
+        }
+        CD_INFO_NO_HEADER(")\n ");
+    }
+
+    CD_INFO_NO_HEADER("------------------------------------\n");
+    //getchar();
+    return path;
+}
+
+/************************************************************************/
 
 /************************************************************************/
 
@@ -409,8 +434,6 @@ bool BalanceTray::moveJointsInPosition(std::vector<double> &rightArm, std::vecto
 
     return true;
 }
-
-/************************************************************************/
 
 bool BalanceTray::moveJointsInPositionDirect(std::vector<double> &rightArm, std::vector<double> &leftArm){
     if(!rightArmIPositionDirect->setPositions(rightArm.data())){

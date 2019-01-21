@@ -72,9 +72,16 @@ namespace teo
             /** Forward Kinematic function **/
             bool getLeftArmFwdKin(std::vector<double> *currentX);
 
+            /****** FUNCTIONS ******/
+
+            /** Interpolate function **/
+            std::vector<std::vector<double> > interpolate(std::vector<double> startPose, std::vector<double> endPose, int res);
+
             /** Configure functions **/
             bool configArmsToPosition(double sp, double acc);
             bool configArmsToPositionDirect();
+
+
 
             /** Movement functions **/
             bool moveJointsInPosition(std::vector<double> &rightArm, std::vector<double>& leftArm);
