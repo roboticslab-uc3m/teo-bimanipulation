@@ -81,12 +81,14 @@ namespace teo
             bool configArmsToPosition(double sp, double acc);
             bool configArmsToPositionDirect();
 
-
-
-            /** Movement functions **/
+            /** Modes to move the joins **/
             bool moveJointsInPosition(std::vector<double> &rightArm, std::vector<double>& leftArm);
             bool moveJointsInPositionDirect(std::vector<double> &rightArm, std::vector<double> &leftArm);
-            void preparePosition();
+
+            /** Modes to move the tray **/
+            void preparePosition(); // initial pos
+            bool rotateTrayInDirect(int axis, double angle, int res);
+
 
             /** movement finished */
             bool done;
