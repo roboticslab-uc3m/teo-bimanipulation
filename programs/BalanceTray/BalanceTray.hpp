@@ -5,7 +5,7 @@
 #include "ICartesianSolver.h"
 
 
-#define DEFAULT_ROBOT "/teoSim" // teo or teoSim
+#define DEFAULT_ROBOT "/teo" // teo or teoSim
 
 using namespace yarp::os;
 namespace teo
@@ -87,7 +87,8 @@ namespace teo
 
             /** Modes to move the tray **/
             void preparePosition(); // initial pos
-            bool rotateTrayInDirect(int axis, double angle, int res);
+            bool rotateTrayInPosDirect(int axis, double angle, int points, double delay);
+            bool moveTrayLinearlyInPosDirect(int axis, double dist, int points, double delay);
 
 
             /** movement finished */
