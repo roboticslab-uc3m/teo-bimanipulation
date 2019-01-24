@@ -1,13 +1,17 @@
 // -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*-
+#include <string>
 #include <yarp/os/all.h>
 #include <yarp/dev/all.h>
 #include "ColorDebug.h"
 #include "ICartesianSolver.h"
+#include "KinematicRepresentation.hpp"
 
 
-#define DEFAULT_ROBOT "/teo" // teo or teoSim
+#define DEFAULT_ROBOT "/teoSim" // teo or teoSim
 
 using namespace yarp::os;
+using namespace roboticslab;
+
 namespace teo
 {
 
@@ -47,7 +51,7 @@ namespace teo
             yarp::dev::IControlLimits *rightArmIControlLimits;
             /** Solver device **/
             yarp::dev::PolyDriver rightArmSolverDevice;
-            roboticslab::ICartesianSolver *rightArmICartesianSolver;
+            ICartesianSolver *rightArmICartesianSolver;
             /** Forward Kinematic function **/
             bool getRightArmFwdKin(std::vector<double> *currentX);
 
@@ -68,7 +72,7 @@ namespace teo
             yarp::dev::IControlLimits *leftArmIControlLimits;
             /** Solver device **/
             yarp::dev::PolyDriver leftArmSolverDevice;
-            roboticslab::ICartesianSolver *leftArmICartesianSolver;
+            ICartesianSolver *leftArmICartesianSolver;
             /** Forward Kinematic function **/
             bool getLeftArmFwdKin(std::vector<double> *currentX);
 

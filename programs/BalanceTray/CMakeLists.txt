@@ -8,6 +8,9 @@ set(KEYWORD "balanceTray")
 
 # Find YARP.
 find_package(YARP REQUIRED)
+# Para que nos reconozca la librería KinematicRepresentation, buscamos en el CMakeList principal de kinematics dynamics
+# En install_basic_package_files encontramos el nombre del paquete que buscamos: ROBOTICSLAB_KINEMATICS_DYNAMICS
+find_package(ROBOTICSLAB_KINEMATICS_DYNAMICS REQUIRED)
 
 # Search for source code.
 file(GLOB folder_source *.cpp *.cc *.c)
@@ -28,7 +31,9 @@ link_directories(${TEMPLATE_NAME_LINK_DIRS})
 # Set up our main executable.
 if (folder_source)
   add_executable(${KEYWORD} ${folder_source} ${folder_header})
-  target_link_libraries(${KEYWORD} ${YARP_LIBRARIES} ${TEMPLATE_NAME_LIBRARIES})
+  # linkamos la libreria KinematicRepresentationLib. Ponemos primero el namespace ROBOTICSLAB y luego el nombre de la libreria.
+  # Podemos encontrar el nombre en el CMakeList de la librería: KinematicRepresentationLib
+  target_link_libraries(${KEYWORD} ${YARP_LIBRARIES} ${TEMPLATE_NAME_LIBRARIES} ROBOTICSLAB::KinematicRepresentationLib)
   install(TARGETS ${KEYWORD} DESTINATION bin)
 else (folder_source)
   message(FATAL_ERROR "No source code files found. Please add something")
