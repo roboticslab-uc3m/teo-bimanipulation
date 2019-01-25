@@ -1,0 +1,58 @@
+
+<!-- head -->
+
+        <KinBody name="head" > <!-- makejoinedlinksadjacent="1" -->
+
+
+	    <Body name="AxialNeck" type="dynamic">
+            <offsetfrom>FrontalWaist</offsetfrom>
+            <Translation>0 0 0.435</Translation>
+            <Geom type="trimesh">
+            <Render>models/0.0^cabeza_links.wrl</Render>
+            <collision>models/0.0^cabeza_links.wrl</collision>
+            </Geom>
+            <Mass type="custom">
+              <density>1</density>
+            </Mass>
+            </Body>
+
+	    <Joint circular="false" name="q00" type="hinge">
+            <Body>FrontalWaist</Body>
+            <Body>AxialNeck</Body>
+            <offsetfrom>AxialNeck</offsetfrom>
+            <weight>1.0</weight>
+            <limitsdeg>-70 70</limitsdeg>
+            <axis>0 0 1</axis>
+            <maxvel>3</maxvel>
+            <resolution>1</resolution>
+            </Joint>
+
+
+	    <Body name="FrontalNeck" type="dynamic">
+            <offsetfrom>AxialNeck</offsetfrom>
+            <Translation>0 0 0.0325</Translation>
+            <Geom type="trimesh">
+            <Render>models/0.1^cabeza_links.wrl</Render>
+            <collision>models/0.1^cabeza_links.wrl</collision>
+            </Geom>
+            <Mass type="custom">
+              <density>1</density>
+            </Mass>
+            </Body>
+
+	    <Joint circular="false" name="q01" type="hinge">
+            <Body>AxialNeck</Body>
+            <Body>FrontalNeck</Body>
+            <offsetfrom>FrontalNeck</offsetfrom>
+            <weight>1.0</weight>
+            <limitsdeg>-29 8.4</limitsdeg>
+            <axis>0 1 0</axis>
+            <maxvel>3</maxvel>
+            <resolution>1</resolution>
+            </Joint>
+            <!---->
+            </KinBody>
+
+
+
+

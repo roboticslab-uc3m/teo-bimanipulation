@@ -1,0 +1,58 @@
+<!-- torso -->
+
+        <KinBody name="torso" makejoinedlinksadjacent="1">
+
+
+            <Body name="AxialWaist" type="dynamic">
+            <offsetfrom>RootWaist</offsetfrom>
+            <Translation>0 0 0.1932</Translation>
+            <RotationAxis>0 0 1 0</RotationAxis>
+            <Geom type="trimesh">
+            <Render>models/3.0^torso_simple_links.wrl</Render>
+            <collision>models/3.0^torso_simple_links.wrl</collision>
+            </Geom>
+            <Mass type="custom">
+              <density>1</density>
+            </Mass>
+            </Body>
+
+	    <Joint circular="false" name="q30" type="hinge">
+            <Body>RootWaist</Body>
+            <Body>AxialWaist</Body>
+            <offsetfrom>AxialWaist</offsetfrom>
+            <weight>1.0</weight>
+            <limitsdeg>-59.3 46.3</limitsdeg>
+            <axis>0 0 1</axis>
+            <maxvel>3</maxvel>
+            <resolution>1</resolution>
+            </Joint>
+
+	    <Body name="FrontalWaist" type="dynamic">
+            <offsetfrom>AxialWaist</offsetfrom>
+            <Translation>0 0 0</Translation>
+            <Geom type="trimesh">
+            <Render>models/3.1^torso_simple_links.wrl</Render>
+            <collision>models/3.1^torso_simple_links.wrl</collision>
+            </Geom>
+            <Mass type="custom">
+              <density>1</density>
+            </Mass>
+            </Body>
+
+	    <Joint circular="false" name="q31" type="hinge">
+            <Body>AxialWaist</Body>
+            <Body>FrontalWaist</Body>
+            <offsetfrom>AxialWaist</offsetfrom>
+            <weight>1.0</weight>
+            <limitsdeg>-10.1 90.4</limitsdeg>
+            <axis>0 1 0</axis>
+            <maxvel>3</maxvel>
+            <resolution>1</resolution>
+            </Joint>
+
+	  </KinBody>
+
+
+
+
+
