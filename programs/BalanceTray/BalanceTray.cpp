@@ -190,11 +190,11 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     // -- teoSim:
     //double twist_right_N_T[] = {0.23194013, -0.01027258, -0.00223408,  1.23332913,  1.19139244, -1.25132615}; //right
     //double twist_left_N_T[]  = {0.23194013,  0.01027258, -0.00223408, -1.23332913,  1.19139244,  1.25132615}; //left
-    double twist_right_N_T[] = {2.31983894e-01,-1.51740342e-04, -2.22628149e-03, 1.20036222e+00,   1.21121959e+00,-1.21975782e+00};
-    double twist_left_N_T[]  = {2.31983894e-01, 1.51740342e-04, -2.22628149e-03, -1.20036222e+00,  1.21121959e+00, 1.21975782e+00};
+    //double twist_right_N_T[] = {2.31983894e-01,-1.51740342e-04, -2.22628149e-03, 1.20036222e+00,   1.21121959e+00,-1.21975782e+00};
+    //double twist_left_N_T[]  = {2.31983894e-01, 1.51740342e-04, -2.22628149e-03, -1.20036222e+00,  1.21121959e+00, 1.21975782e+00};
     // -- teo
-    //double twist_right_N_T[] = {0.23304191, -0.00966406,  0.00223844,  1.23962311,  1.177845,   -1.23548854}; //right
-    //double twist_left_N_T[]  = {0.2326286,   0.00982344,  0.00135894, -1.23963708,  1.18144192,  1.23803463}; //left
+    double twist_right_N_T[] = {0.23180092,  0.04355772,  0.00286978,  1.06266451,  1.26483919, -1.07177062}; //right
+    double twist_left_N_T[]  = {0.22996767, -0.00245027,  0.00233173, -1.19609439,  1.19654277,  1.20038738}; //left
 
     std::vector<double> vtwist_right_N_T(&twist_right_N_T[0], &twist_right_N_T[0]+sizeof(twist_right_N_T));
     std::vector<double> vtwist_left_N_T(&twist_left_N_T[0], &twist_left_N_T[0]+sizeof(twist_left_N_T));
@@ -404,7 +404,7 @@ bool BalanceTray::configArmsToPositionDirect(){
             CD_ERROR("Problems setting POSITION DIRECT mode of: left-arm\n");
             return false;
         }
-        CD_INFO_NO_HEADER("Configured to Position Direct\n");
+        CD_SUCCESS_NO_HEADER("Configured to Position Direct\n");
         return true;
 }
 
@@ -719,21 +719,21 @@ void BalanceTray::preparePosition(){
         getchar();
         configArmsToPositionDirect();
         getchar();
-        moveTrayLinearlyInPosDirect(0, -0.06, 200, 0.04);
+        moveTrayLinearlyInPosDirect(0, -0.06, 300, 0.05);
 
         while(1){
 
             getchar();
-            rotateTrayInPosDirect(0, -0.0488, 200, 0.04); // -0.0488
+            rotateTrayInPosDirect(0, -0.04, 300, 0.05); // -0.0488
 
             getchar();
-            rotateTrayInPosDirect(0, 0.0488, 200, 0.04);
+            rotateTrayInPosDirect(0, 0.04, 300, 0.05);
 
             getchar();
-            rotateTrayInPosDirect(0, 0.0488, 200, 0.04);
+            rotateTrayInPosDirect(0, 0.04, 300, 0.05);
 
             getchar();
-            rotateTrayInPosDirect(0, -0.0488, 200, 0.04);
+            rotateTrayInPosDirect(0, -0.04, 300, 0.05);
        }
 }
 
