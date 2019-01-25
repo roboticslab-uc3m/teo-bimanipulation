@@ -188,8 +188,10 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     // ** Unify TCP of right-arm and left-arm: apppending link to the tray's centroid
     /** Transformation matrix between the gripper and the tray **/
     // -- teoSim:
-    double twist_right_N_T[] = {0.23194013, -0.01027258, -0.00223408,  1.23332913,  1.19139244, -1.25132615}; //right
-    double twist_left_N_T[]  = {0.23194013,  0.01027258, -0.00223408, -1.23332913,  1.19139244,  1.25132615}; //left
+    //double twist_right_N_T[] = {0.23194013, -0.01027258, -0.00223408,  1.23332913,  1.19139244, -1.25132615}; //right
+    //double twist_left_N_T[]  = {0.23194013,  0.01027258, -0.00223408, -1.23332913,  1.19139244,  1.25132615}; //left
+    double twist_right_N_T[] = {2.31983894e-01,-1.51740342e-04, -2.22628149e-03, 1.20036222e+00,   1.21121959e+00,-1.21975782e+00};
+    double twist_left_N_T[]  = {2.31983894e-01, 1.51740342e-04, -2.22628149e-03, -1.20036222e+00,  1.21121959e+00, 1.21975782e+00};
     // -- teo
     //double twist_right_N_T[] = {0.23304191, -0.00966406,  0.00223844,  1.23962311,  1.177845,   -1.23548854}; //right
     //double twist_left_N_T[]  = {0.2326286,   0.00982344,  0.00135894, -1.23963708,  1.18144192,  1.23803463}; //left
@@ -597,7 +599,7 @@ bool BalanceTray::rotateTrayInPosDirect(int axis, double angle, int points, doub
     if(! getRightArmFwdKin(&poseArmOrig))
         CD_ERROR("Doing Forward Kinematic of right-arm...\n");
 
-    //Converting units more readable
+    //Converting units more readable:  AXIS_ANGLE_SCALED ->  AXIS_ANGLE
     std::vector<double> axisAngleArmOrig(7); // axis angle
     KinRepresentation::decodePose(poseArmOrig, axisAngleArmOrig, KinRepresentation::CARTESIAN, KinRepresentation::AXIS_ANGLE, KinRepresentation::DEGREES );
 
@@ -606,7 +608,6 @@ bool BalanceTray::rotateTrayInPosDirect(int axis, double angle, int points, doub
         CD_INFO_NO_HEADER("%f ",axisAngleArmOrig[i]);
     CD_INFO_NO_HEADER(")\n ");
 
-    //Sumamos los angulos a aplicar en el eje
 
     // Calculating new destination point
     poseArmDest = poseArmOrig;
@@ -709,12 +710,13 @@ void BalanceTray::preparePosition(){
     // Prepare the last position        
         CD_INFO("Preparing position...\n");
         configArmsToPosition(25,25);
-        double rightArmPoss[7] = {31.283699, -14.04759, -10.804402, 60.000894, -75, 88.479388};
-        double leftArmPoss[7] = {-31.283699, 14.04759, 10.804402, -60.000894, 75, -88.479388};
+        double rightArmPoss[7] = {31.283699, -14.04759, -10.804402, 60.000894, -72.5, 88.479388};
+        double leftArmPoss[7] = {-31.283699, 14.04759, 10.804402, -60.000894, 72.5, -88.479388};
         std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+7); //teoSim (+6) teo (+7)
         std::vector<double> leftArm(&leftArmPoss[0], &leftArmPoss[0]+7);
         moveJointsInPosition(rightArm, leftArm);
 
+        getchar();
         configArmsToPositionDirect();
         getchar();
         moveTrayLinearlyInPosDirect(0, -0.06, 200, 0.04);
@@ -722,16 +724,16 @@ void BalanceTray::preparePosition(){
         while(1){
 
             getchar();
-            rotateTrayInPosDirect(1, -0.0488, 200, 0.04); // -0.0488
+            rotateTrayInPosDirect(0, -0.0488, 200, 0.04); // -0.0488
 
             getchar();
-            rotateTrayInPosDirect(1, 0.0488, 200, 0.04);
+            rotateTrayInPosDirect(0, 0.0488, 200, 0.04);
 
             getchar();
-            rotateTrayInPosDirect(1, 0.0488, 200, 0.04);
+            rotateTrayInPosDirect(0, 0.0488, 200, 0.04);
 
             getchar();
-            rotateTrayInPosDirect(1, -0.0488, 200, 0.04);
+            rotateTrayInPosDirect(0, -0.0488, 200, 0.04);
        }
 }
 
