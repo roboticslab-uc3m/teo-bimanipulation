@@ -93,7 +93,11 @@ namespace teo
             void preparePosition(); // initial pos
             bool rotateTrayInPosDirect(int axis, double angle, int points, double delay);
             bool moveTrayLinearlyInPosDirect(int axis, double dist, int points, double delay);
+            bool recoverPosition(int points, double delay);
 
+            /** Show information **/
+            void showArmsFKinAAS();
+            void showArmsFKinAA();
 
             /** movement finished */
             bool done;
