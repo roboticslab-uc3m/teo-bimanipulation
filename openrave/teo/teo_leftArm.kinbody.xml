@@ -22,7 +22,7 @@
             <Body>r20</Body>
             <offsetfrom>r20</offsetfrom>
             <weight>1.0</weight>
-            <limitsdeg>-93.5 87.6</limitsdeg> <!-- <limitsdeg>-75 45</limitsdeg> -->
+            <limitsdeg>-96.8 113.2</limitsdeg> <!-- <limitsdeg>-75 45</limitsdeg> -->
             <axis>0 1 0</axis>
             <maxvel>3</maxvel>
             <resolution>1</resolution>
@@ -46,7 +46,7 @@
             <Body>r21</Body>
             <offsetfrom>r21</offsetfrom>
             <weight>1.0</weight>
-            <limitsdeg>-29.2 74.5</limitsdeg>
+            <limitsdeg>-23.9 76.5</limitsdeg>
             <axis>1 0 0</axis>
             <maxvel>3</maxvel>
             <resolution>1</resolution>
@@ -70,7 +70,7 @@
             <Body>r22</Body>
             <offsetfrom>r22</offsetfrom>
             <weight>1.0</weight>
-            <limitsdeg>-82.5 54.7</limitsdeg> <!-- <limitsdeg>-10 75</limitsdeg> -->
+            <limitsdeg>-84.1 51.6</limitsdeg> <!-- <limitsdeg>-10 75</limitsdeg> -->
             <axis>0 0 -1</axis>
             <maxvel>3</maxvel>
             <resolution>1</resolution>
@@ -94,7 +94,7 @@
             <Body>r23</Body>
             <offsetfrom>r23</offsetfrom>
             <weight>1.0</weight>
-            <limitsdeg>-101.1 14.1</limitsdeg>
+            <limitsdeg>-101.1 96.8</limitsdeg>
             <axis>0 1 0</axis>
             <maxvel>3</maxvel>
             <resolution>1</resolution>
@@ -137,7 +137,7 @@
 		<Body>LeftFrontalWrist</Body>
 		<offsetfrom>LeftFrontalWrist</offsetfrom>
 		<weight>1.0</weight>
-		<limitsdeg>-103.9 59.8</limitsdeg> <!-- <limitsdeg>-10 100</limitsdeg> -->
+		<limitsdeg>-113.3 61.3</limitsdeg> <!-- <limitsdeg>-10 100</limitsdeg> -->
 		<axis>-1 0 0</axis>
 		<maxvel>3</maxvel>
 		<resolution>1</resolution>
