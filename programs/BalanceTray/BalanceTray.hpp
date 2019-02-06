@@ -76,6 +76,11 @@ namespace teo
             /** Forward Kinematic function **/
             bool getLeftArmFwdKin(std::vector<double> *currentX);
 
+            /** Reference position functions **/
+            std::vector<double> referencePosition[2];
+            bool saveRefPosition();
+            bool goToRefPosition(int points, double delay);
+
             /****** FUNCTIONS ******/
 
             /** Interpolate function **/

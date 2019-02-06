@@ -188,42 +188,41 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     // ** Unify TCP of right-arm and left-arm: apppending link to the tray's centroid
     /** Transformation matrix between the gripper and the tray **/
     // -- teoSim:     
-    //double twist_right_N_T[] = {2.31983894e-01,-1.51740342e-04, -2.22628149e-03, 1.20036222e+00,   1.21121959e+00,-1.21975782e+00};
-    //double twist_left_N_T[]  = {2.31983894e-01, 1.51740342e-04, -2.22628149e-03, -1.20036222e+00,  1.21121959e+00, 1.21975782e+00};
+    double rightArmTeoSim[] = {2.31983894e-01,-1.51740342e-04, -2.22628149e-03, 1.20036222e+00,   1.21121959e+00,-1.21975782e+00};
+    double leftArmTeoSim[]  = {2.31983894e-01, 1.51740342e-04, -2.22628149e-03, -1.20036222e+00,  1.21121959e+00, 1.21975782e+00};
     // -- teo    
-    double twist_right_N_T[] = {2.26569395e-01, 9.62965268e-02, 9.81463895e-04, 8.95534782e-01, 1.34767916e+00, -9.14452916e-01}; //right
-    double twist_left_N_T[]  = {2.30405787e-01,-1.53655717e-03, 6.52832174e-04,-1.20043758e+00, 1.20502640e+00,  1.20553506e+00}; //left
+    double rightArmTeoRobot[] = {2.31871085e-01, -1.38905351e-04, 2.11665586e-03, 1.20305824e+00, 1.19124961e+00, -1.20995153e+00}; //right
+    double leftArmTeoRobot[]  = {0.2300581,  -0.00244056,  0.00208225, -1.19343001, 1.19510719,  1.20261441}; //left
 
-    std::vector<double> vtwist_right_N_T(&twist_right_N_T[0], &twist_right_N_T[0]+sizeof(twist_right_N_T));
-    std::vector<double> vtwist_left_N_T(&twist_left_N_T[0], &twist_left_N_T[0]+sizeof(twist_left_N_T));
+    std::vector<double> twist_right_N_T;
+    std::vector<double> twist_left_N_T;
 
-    rightArmICartesianSolver->appendLink(vtwist_right_N_T);
-    leftArmICartesianSolver->appendLink(vtwist_left_N_T);
+    if(DEFAULT_ROBOT=="/teoSim"){
+        for(int i; i<sizeof(rightArmTeoSim); i++)
+            twist_right_N_T.push_back(rightArmTeoSim[i]);
+        for(int i; i<sizeof(leftArmTeoSim); i++)
+            twist_left_N_T.push_back(leftArmTeoSim[i]);
+        CD_SUCCESS("\n");
+    }
+    else if(DEFAULT_ROBOT=="/teo")
+    {
+        for(int i; i<sizeof(rightArmTeoRobot); i++)
+            twist_right_N_T.push_back(rightArmTeoRobot[i]);
+        for(int i; i<sizeof(leftArmTeoRobot); i++)
+            twist_left_N_T.push_back(leftArmTeoRobot[i]);
+        CD_SUCCESS("\n");
+    }
+    else
+    {
+        CD_ERROR("\n");
+        return false;
+    }
+
+    rightArmICartesianSolver->appendLink(twist_right_N_T);
+    leftArmICartesianSolver->appendLink(twist_left_N_T);
 
     // prepare position
     preparePosition();
-
-    CD_INFO_NO_HEADER("Current FK of TCP in both arms:\n");
-
-    // * left-arm
-    std::vector<double> leftArmCurrentPose(6); // origin pose
-    if(! getLeftArmFwdKin(&leftArmCurrentPose))
-        CD_ERROR("Doing Forward Kinematic of left-arm\n");
-
-    CD_INFO_NO_HEADER(" Left-arm: [");
-    for(int i=0; i<leftArmCurrentPose.size(); i++)
-        CD_INFO_NO_HEADER("%f ",leftArmCurrentPose[i]);
-    printf("]\n ");
-
-    // * right-arm
-    std::vector<double> rightArmCurrentPose(6); // origin pose
-    if(! getRightArmFwdKin(&rightArmCurrentPose))
-        CD_ERROR("Doing Forward Kinematic of right-arm\n");
-
-    CD_INFO_NO_HEADER("Right-arm: [");
-    for(int i=0; i<rightArmCurrentPose.size(); i++)
-        CD_INFO_NO_HEADER("%f ",rightArmCurrentPose[i]);
-    printf("]\n ");
 
     return true;
 }
@@ -467,64 +466,66 @@ bool BalanceTray::moveJointsInPositionDirect(std::vector<double> &rightArm, std:
 bool BalanceTray::moveTrayLinearlyInPosDirect(int axis, double dist, int points, double delay)
 {
 
-    std::vector<double> rightArmOrig(6); // origin pose of right-arm
-    std::vector<double> rightArmDest(6); // destination pose of right-arm
-    std::vector<double> leftArmOrig(6); // origin pose of left-arm
-    std::vector<double> leftArmDest(6); // destination pose of left-arm
+
+    //std::vector<double> rightArmDest(6); // destination pose of right-arm
+
+    //std::vector<double> leftArmDest(6); // destination pose of left-arm
 
     // Resulting paths:
     std::vector<std::vector<double> > rightArmPath(points, std::vector<double>(6));
     std::vector<std::vector<double> > leftArmPath(points, std::vector<double>(6));
 
     // Getting fordward kinematic
+    std::vector<double> rightArmOrig(6); // origin pose of right-arm
     if(! getRightArmFwdKin(&rightArmOrig))
         printf("[ERROR] Doing Forward Kinematic of right-arm...\n");
 
+    std::vector<double> leftArmOrig(6); // origin pose of left-arm
     if(! getLeftArmFwdKin(&leftArmOrig))
         printf("[ERROR] Doing Forward Kinematic of left-arm...\n");
 
     // Calculating new destination point of right-arm and left-arm
-    rightArmDest = rightArmOrig;
+    std::vector<double> rightArmDest = rightArmOrig;
     rightArmDest[axis] = rightArmOrig[axis] + dist; // pto destination = pto origin + dist
-    leftArmDest = leftArmOrig;
+    std::vector<double> leftArmDest = leftArmOrig;
     leftArmDest[axis] = leftArmOrig[axis] + dist; // pto destination = pto origin + dist
 
     // interpolation
     rightArmPath = interpolate(rightArmOrig, rightArmDest, points);
     leftArmPath = interpolate(leftArmOrig, leftArmDest, points);
 
-    std::vector<double> rightArmCurrentQ(numRightArmJoints);
-    std::vector<double> rightArmDesireQ(numRightArmJoints);
-    std::vector<double> leftArmCurrentQ(numRightArmJoints);
-    std::vector<double> leftArmDesireQ(numRightArmJoints);
 
     // MAIN LOOP
     for(int i=0; i<points; i++){
 
         // initialize to 0
-        rightArmCurrentQ.clear();
-        rightArmDesireQ.clear();
-        leftArmCurrentQ.clear();
-        leftArmDesireQ.clear();
+        //rightArmCurrentQ.clear();
+        //rightArmDesireQ.clear();
+        //leftArmCurrentQ.clear();
+        //leftArmDesireQ.clear();
 
         // -- Right-Arm
         // currentQ: pequeña ayuda que le das al solver sobre la posición inicial en posicion articular
+        std::vector<double> rightArmCurrentQ(numRightArmJoints);
         if ( ! rightArmIEncoders->getEncoders( rightArmCurrentQ.data() ) ){
             printf("[ERROR] Failed getEncoders of right-arm\n");
             return false;
         }
         // inverse kinematic
+        std::vector<double> rightArmDesireQ(numRightArmJoints);
         if ( ! rightArmICartesianSolver->invKin(rightArmPath[i], rightArmCurrentQ, rightArmDesireQ) )    {
             printf("[ERROR] invKin failed.\n");
             return false;
         }
 
         // -- Left-Arm
+        std::vector<double> leftArmCurrentQ(numLeftArmJoints);
         if ( ! leftArmIEncoders->getEncoders( leftArmCurrentQ.data() ) ){
             printf("[ERROR] Failed getEncoders of left-arm\n");
             return false;
         }
         // inverse kinematic
+        std::vector<double> leftArmDesireQ(numLeftArmJoints);
         if ( ! leftArmICartesianSolver->invKin(leftArmPath[i], leftArmCurrentQ, leftArmDesireQ) )    {
             printf("[ERROR] invKin failed.\n");
             return false;
@@ -532,15 +533,7 @@ bool BalanceTray::moveTrayLinearlyInPosDirect(int axis, double dist, int points,
 
         /*   [[[[[ Print values in AXIS_ANGLE]]]]]
          *   -----------------------------------------  */
-        std::vector<double> currentPoint(6);
-        if(! getRightArmFwdKin(&currentPoint))
-            CD_ERROR("Doing Forward Kinematic of right-arm...\n");
-        std::vector<double> currentPointInAxisAngle(7); // axis angle
-        KinRepresentation::decodePose(currentPoint, currentPointInAxisAngle, KinRepresentation::CARTESIAN, KinRepresentation::AXIS_ANGLE, KinRepresentation::DEGREES );
-        printf("Current point R-arm (%d): [", i+1);
-        for(int i=0; i<currentPointInAxisAngle.size(); i++)
-            printf("%f ",currentPointInAxisAngle[i]);
-        printf("]\n ");
+        showArmsFKinAA();
 
         moveJointsInPositionDirect(rightArmDesireQ, leftArmDesireQ);
         yarp::os::Time::delay(delay);
@@ -633,112 +626,6 @@ bool BalanceTray::rotateTrayInPosDirect(int axis, double angle, int points, doub
     return true;
 }
 
-bool BalanceTray::recoverPosition(int points, double delay){
-    double rightArmValues[6] = {0.316404, -0.005653, 0.124622, -0.399660, -0.007215, 0.004223};
-    double leftArmValues[6] =  {0.315467, -0.001540, 0.221590, 0.000031, 0.007836, -0.004015};
-    std::vector<double> rightArmInit(&rightArmValues[0], &rightArmValues[0]+sizeof (rightArmValues)); //teoSim (+6) teo (+7)
-    std::vector<double> leftArmInit(&leftArmValues[0], &leftArmValues[0]+sizeof (leftArmValues));
-
-    // Resulting paths:
-    std::vector<std::vector<double> > rightArmPath(points, std::vector<double>(6));
-    std::vector<std::vector<double> > leftArmPath(points, std::vector<double>(6));
-
-    // Getting fordward kinematic
-    std::vector<double> rightArmOrig(6);
-    if(! getRightArmFwdKin(&rightArmOrig))
-        printf("[ERROR] Doing Forward Kinematic of right-arm...\n");
-
-    std::vector<double> leftArmOrig(6);
-    if(! getLeftArmFwdKin(&leftArmOrig))
-        printf("[ERROR] Doing Forward Kinematic of left-arm...\n");
-
-    // Interpolation: nos devolverá un vector (path) con todos los vectores de poses
-    rightArmPath = interpolate(rightArmOrig, rightArmInit, points);
-    leftArmPath = interpolate(leftArmOrig, leftArmInit, points);
-
-    std::vector<double> rightArmCurrentQ(numRightArmJoints);
-    std::vector<double> rightArmDesireQ(numRightArmJoints);
-
-    std::vector<double> leftArmCurrentQ(numRightArmJoints);
-    std::vector<double> leftArmDesireQ(numRightArmJoints);
-
-    // MAIN LOOP
-    for(int i=0; i<points; i++){
-
-        // initialize to 0
-        rightArmCurrentQ.clear();
-        rightArmDesireQ.clear();
-        leftArmCurrentQ.clear();
-        leftArmCurrentQ.clear();
-
-        // -- Right-Arm
-        // currentQ: pequeña ayuda que le das al solver sobre la posición inicial en posicion articular
-        if ( ! rightArmIEncoders->getEncoders( rightArmCurrentQ.data() ) ){
-            printf("[ERROR] Failed getEncoders of right-arm\n");
-            return false;
-        }
-        // inverse kinematic
-        if ( ! rightArmICartesianSolver->invKin(rightArmPath[i], rightArmCurrentQ, rightArmDesireQ) )    {
-            printf("[ERROR] invKin failed.\n");
-            return false;
-        }
-
-        // -- Left-Arm
-        if ( ! leftArmIEncoders->getEncoders( leftArmCurrentQ.data() ) ){
-            printf("[ERROR] Failed getEncoders of left-arm\n");
-            return false;
-        }
-        // inverse kinematic
-        if ( ! leftArmICartesianSolver->invKin(leftArmPath[i], leftArmCurrentQ, leftArmDesireQ) )    {
-            printf("[ERROR] invKin failed.\n");
-            return false;
-        }
-
-        std::vector<double> rightArm(&rightArmDesireQ[0], &rightArmDesireQ[0]+sizeof (rightArmDesireQ)); //teoSim (+6) teo (+7)
-        std::vector<double> leftArm(&leftArmDesireQ[0], &leftArmDesireQ[0]+sizeof (leftArmDesireQ));
-        moveJointsInPositionDirect(rightArm, leftArm);
-
-        yarp::os::Time::delay(delay);
-    }
-    return true;
-}
-
-void BalanceTray::preparePosition(){
-    // Prepare the last position        
-        CD_INFO("Preparing position...\n");
-        configArmsToPosition(25,25);
-        double rightArmPoss[7] = {31.283699, -14.04759, -10.804402, 60.000894, -72.5, 88.479388};
-        double leftArmPoss[7] = {-31.283699, 14.04759, 10.804402, -60.000894, 72.5, -88.479388};
-        std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+7); //teoSim (+6) teo (+7)
-        std::vector<double> leftArm(&leftArmPoss[0], &leftArmPoss[0]+7);
-        moveJointsInPosition(rightArm, leftArm);
-        configArmsToPositionDirect();
-        printf("Press a Key to move -Y");
-        getchar();
-        moveTrayLinearlyInPosDirect(0, -0.06, 50, 0.05);
-        showArmsFKinAAS();
-
-        while(1){
-
-            getchar();
-            printf("turning -0.04\n");
-            rotateTrayInPosDirect(0, -0.04, 10, 0.05); // -0.0488
-
-            getchar();
-            printf("turning 0.04\n");
-            rotateTrayInPosDirect(0, 0.04, 10, 0.05);
-
-            getchar();
-            printf("turning 0.04\n");
-            rotateTrayInPosDirect(0, 0.04, 10, 0.05);
-
-            getchar();
-            printf("turning -0.04\n");
-            rotateTrayInPosDirect(0, -0.04, 10, 0.05);
-       }
-
-}
-
 // FK in AXIS_ANGLE_SCALED
 void BalanceTray::showArmsFKinAAS(){
     printf("R-arm pose : [");
@@ -780,6 +667,155 @@ void BalanceTray::showArmsFKinAA(){
         printf("%f ",leftArmPointInAxisAngle[i]);
     printf("]\n ");
 }
+
+bool BalanceTray::saveRefPosition(){;
+    std::vector<double> rightArmPoint(6);
+    if(! getRightArmFwdKin(&rightArmPoint)){
+        CD_ERROR("Doing Forward Kinematic of right-arm...\n");
+        return false;
+    }
+    std::vector<double> leftArmPoint(6);
+    if(! getLeftArmFwdKin(&leftArmPoint)){
+        CD_ERROR("Doing Forward Kinematic of left-arm...\n");
+        return false;
+    }
+
+    referencePosition[0] = rightArmPoint;
+    referencePosition[1] = leftArmPoint;
+    CD_SUCCESS("Saved currect position\n");
+    return true;
+}
+
+bool BalanceTray::goToRefPosition(int points, double delay){
+
+    // Resulting paths:
+    std::vector<std::vector<double> > rightArmPath(points, std::vector<double>(6));
+    std::vector<std::vector<double> > leftArmPath(points, std::vector<double>(6));
+
+    // Getting fordward kinematic
+    std::vector<double> rightArmOrig(6);
+    if(! getRightArmFwdKin(&rightArmOrig))
+        printf("[ERROR] Doing Forward Kinematic of right-arm...\n");
+
+    std::vector<double> leftArmOrig(6);
+    if(! getLeftArmFwdKin(&leftArmOrig))
+        printf("[ERROR] Doing Forward Kinematic of left-arm...\n");
+
+    // Interpolation: nos devolverá un vector (path) con todos los vectores de poses
+    rightArmPath = interpolate(rightArmOrig, referencePosition[0], points);
+    leftArmPath = interpolate(leftArmOrig, referencePosition[1], points);
+
+    std::vector<double> rightArmCurrentQ(numRightArmJoints);
+    std::vector<double> rightArmDesireQ(numRightArmJoints);
+
+    std::vector<double> leftArmCurrentQ(numRightArmJoints);
+    std::vector<double> leftArmDesireQ(numRightArmJoints);
+
+    // MAIN LOOP
+    for(int i=0; i<points; i++){
+
+        // initialize to 0
+        rightArmCurrentQ.clear();
+        rightArmDesireQ.clear();
+        leftArmCurrentQ.clear();
+        leftArmCurrentQ.clear();
+
+        // -- Right-Arm
+        // currentQ: pequeña ayuda que le das al solver sobre la posición inicial en posicion articular
+        if ( ! rightArmIEncoders->getEncoders( rightArmCurrentQ.data() ) ){
+            printf("[ERROR] Failed getEncoders of right-arm\n");
+            return false;
+        }
+        // inverse kinematic
+        if ( ! rightArmICartesianSolver->invKin(rightArmPath[i], rightArmCurrentQ, rightArmDesireQ) )    {
+            printf("[ERROR] invKin failed.\n");
+            return false;
+        }
+
+        // -- Left-Arm
+        if ( ! leftArmIEncoders->getEncoders( leftArmCurrentQ.data() ) ){
+            printf("[ERROR] Failed getEncoders of left-arm\n");
+            return false;
+        }
+        // inverse kinematic
+        if ( ! leftArmICartesianSolver->invKin(leftArmPath[i], leftArmCurrentQ, leftArmDesireQ) )    {
+            printf("[ERROR] invKin failed.\n");
+            return false;
+        }
+
+        // show FK in AAS
+        showArmsFKinAA();
+        moveJointsInPositionDirect(rightArmDesireQ, leftArmDesireQ);
+        yarp::os::Time::delay(delay);
+    }
+    return true;
+}
+
+
+
+
+void BalanceTray::preparePosition(){
+    // Prepare the last position        
+        CD_INFO("Preparing position...\n");
+        configArmsToPosition(25,25);
+        double rightArmPoss[7] = {31.283699, -14.04759, -10.804402, 60.000894, -72.5, 88.479388};
+        double leftArmPoss[7] = {-31.283699, 14.04759, 10.804402, -60.000894, 72.5, -88.479388};
+        std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+7); //teoSim (+6) teo (+7)
+        std::vector<double> leftArm(&leftArmPoss[0], &leftArmPoss[0]+7);
+        moveJointsInPosition(rightArm, leftArm);
+        yarp::os::Time::delay(0.5);
+        showArmsFKinAAS();
+        getchar();
+        configArmsToPositionDirect();
+        printf("Press a Key to move the tray -6cm (X)");
+        getchar();
+        moveTrayLinearlyInPosDirect(0, -0.06, 100, 0.05);
+        saveRefPosition(); // save the current position in a Global variable
+
+        while(1){
+
+            CD_INFO_NO_HEADER("Rotate: -5º(X)\n");
+            getchar();
+            rotateTrayInPosDirect(0, -0.09, 100, 0.05); // -0.0488
+
+            CD_INFO_NO_HEADER("Go to reference position");
+            getchar();
+            goToRefPosition(100, 0.05);
+
+            CD_INFO_NO_HEADER("Rotate: +5º(X)\n");
+            getchar();            
+            rotateTrayInPosDirect(0, 0.09, 100, 0.05);
+
+            CD_INFO_NO_HEADER("Go to reference position");
+            getchar();
+            goToRefPosition(100, 0.05);
+
+            CD_INFO_NO_HEADER("Rotate: -5º(Y)\n");
+            getchar();
+            rotateTrayInPosDirect(1, -0.09, 100, 0.05);
+
+            CD_INFO_NO_HEADER("Go to reference position");
+            getchar();
+            goToRefPosition(100, 0.05);
+
+            CD_INFO_NO_HEADER("Rotate: 5º(Y)\n");
+            getchar();
+            rotateTrayInPosDirect(1, 0.09, 100, 0.05);
+
+            CD_INFO_NO_HEADER("Go to reference position");
+            getchar();
+            goToRefPosition(100, 0.05);
+
+
+            //CD_INFO_NO_HEADER("Go to reference position");
+            //getchar();
+            //goToRefPosition(20, 0.05);
+
+
+       }
+
+}
+
 
 void BalanceTray::run()
 {
