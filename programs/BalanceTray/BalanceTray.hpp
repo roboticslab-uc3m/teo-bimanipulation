@@ -95,10 +95,14 @@ namespace teo
             bool moveJointsInPositionDirect(std::vector<double> &rightArm, std::vector<double> &leftArm);
 
             /** Modes to move the tray **/
-            void preparePosition(); // initial pos
+            bool homePosition(); // initial pos
             bool rotateTrayInPosDirect(int axis, double angle, int points, double delay);
             bool moveTrayLinearlyInPosDirect(int axis, double dist, int points, double delay);
             bool recoverPosition(int points, double delay);
+
+            /** Demostration functions */
+            void trayLinearlyMovementDemo(int points);
+            void trayRotateMovementDemo(int points);
 
             /** Show information **/
             void showArmsFKinAAS();
