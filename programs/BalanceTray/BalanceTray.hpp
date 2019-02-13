@@ -100,9 +100,9 @@ namespace teo
             bool moveTrayLinearlyInPosDirect(int axis, double dist, int points, double delay);
             bool recoverPosition(int points, double delay);
 
-            /** Demostration functions */
-            void trayLinearlyMovementDemo(int points);
-            void trayRotateMovementDemo(int points);
+            /** Check movements functions */
+            void checkLinearlyMovement(int axis, int points, int rep);
+            void checkRotateMovement(int axis, int points, int rep );
 
             /** Show information **/
             void showArmsFKinAAS();

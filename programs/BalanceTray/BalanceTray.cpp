@@ -198,17 +198,17 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     std::vector<double> twist_left_N_T;
 
     if(DEFAULT_ROBOT=="/teoSim"){
-        for(int i; i<sizeof(rightArmTeoSim); i++)
+        for(int i; i<6; i++)
             twist_right_N_T.push_back(rightArmTeoSim[i]);
-        for(int i; i<sizeof(leftArmTeoSim); i++)
+        for(int i; i<6; i++)
             twist_left_N_T.push_back(leftArmTeoSim[i]);
         CD_SUCCESS("\n");
     }
     else if(DEFAULT_ROBOT=="/teo")
     {
-        for(int i; i<sizeof(rightArmTeoRobot); i++)
+        for(int i; i<6; i++)
             twist_right_N_T.push_back(rightArmTeoRobot[i]);
-        for(int i; i<sizeof(leftArmTeoRobot); i++)
+        for(int i; i<6; i++)
             twist_left_N_T.push_back(leftArmTeoRobot[i]);
         CD_SUCCESS("\n");
     }
@@ -223,14 +223,13 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
 
     //Start operations:
     homePosition();
+    showArmsFKinAA();
+    printf("Put the tray and press a Key...\n");
+    getchar();
     configArmsToPositionDirect();
-    printf("Put the tray and press a Key");
-    getchar();
-    //trayLinearlyMovementDemo(100);
-    while(1){
-    getchar();
-    trayRotateMovementDemo(10);
-    }
+    //checkLinearlyMovement(1,200,10);
+    checkRotateMovement(0, 100, 5);
+
 
     return true;
 }
@@ -753,66 +752,36 @@ bool BalanceTray::homePosition(){
         return true;
 }
 
-void BalanceTray::trayLinearlyMovementDemo(int points){
-    printf("\n-- moving tray [-10cm] in Y axis \n\n");
-    yarp::os::Time::delay(2);
-    moveTrayLinearlyInPosDirect(1, -0.10, points, 0.05);
-    yarp::os::Time::delay(1);
-    printf("\n-- moving tray [+20cm] in Y axis\n\n");
-    yarp::os::Time::delay(2);
-    moveTrayLinearlyInPosDirect(1, 0.20, points*2, 0.05);
-    yarp::os::Time::delay(1);
+void BalanceTray::checkLinearlyMovement(int axis, int points, int rep){
+    printf("\n-- moving tray [-10cm] in Y axis \n\n");    
+    moveTrayLinearlyInPosDirect(axis, -0.08, points, 0.05);
+    for(int i=0; i<rep; i++){
+        printf("\n --- ITERATION %d ---\n", i+1);
+        printf("\n-- moving tray [+20cm] in Y axis\n\n");
+        moveTrayLinearlyInPosDirect(axis, 0.16, points*2, 0.05);
+        printf("\n-- moving tray [-20cm] in Y axis \n\n");
+        moveTrayLinearlyInPosDirect(axis, -0.16, points*2, 0.05);
+    }
     printf("\n-- recovering home position...\n\n");
-    yarp::os::Time::delay(2);
-    goToRefPosition(100, 0.05);
-    yarp::os::Time::delay(1);
-    printf("\n-- moving tray [5cm] in Y axis\n\n");
-    yarp::os::Time::delay(2);
-    moveTrayLinearlyInPosDirect(0, 0.05, points, 0.05);
-    yarp::os::Time::delay(1);
-    printf("\n-- moving tray [-10cm] in Y axis\n\n");
-    yarp::os::Time::delay(2);
-    moveTrayLinearlyInPosDirect(0, -0.10, points*2, 0.05);
-    yarp::os::Time::delay(1);
-    printf("\n-- recovering home position...\n\n");
-    yarp::os::Time::delay(2);
-    goToRefPosition(100, 0.05);
-    yarp::os::Time::delay(1);
+    goToRefPosition(points, 0.08);
 }
 
-void BalanceTray::trayRotateMovementDemo(int points){
+
+
+void BalanceTray::checkRotateMovement(int axis, int points, int rep ){
     printf("\n-- rotate tray [5º] on the X axis \n\n");
-    yarp::os::Time::delay(2);
-    rotateTrayInPosDirect(0, 0.09, points, 0.05);
-    yarp::os::Time::delay(1);
-    printf("\n-- recovering home position...\n\n");
-    yarp::os::Time::delay(2);
-    goToRefPosition(points, 0.05);
-    yarp::os::Time::delay(1);
-    printf("\n-- rotate tray [-5º] on the X axis \n\n");
-    yarp::os::Time::delay(2);
-    rotateTrayInPosDirect(0, -0.09, points, 0.05);
-    yarp::os::Time::delay(1);
-    printf("\n-- recovering home position...\n\n");
-    yarp::os::Time::delay(2);
-    goToRefPosition(points, 0.05);
-    yarp::os::Time::delay(1);
-    printf("\n-- rotate tray [5º] on the Y axis \n\n");
-    yarp::os::Time::delay(2);
-    rotateTrayInPosDirect(1, 0.09, points, 0.05);
-    yarp::os::Time::delay(1);
-    printf("\n-- recovering home position...\n\n");
-    yarp::os::Time::delay(2);
-    goToRefPosition(points, 0.05);
-    yarp::os::Time::delay(1);
-    printf("\n-- rotate tray [-5º] on the Y axis \n\n");
-    yarp::os::Time::delay(2);
-    rotateTrayInPosDirect(1, -0.09, points, 0.05);
-    yarp::os::Time::delay(1);
-    printf("\n-- recovering home position...\n\n");
-    yarp::os::Time::delay(2);
-    goToRefPosition(points, 0.05);
-    yarp::os::Time::delay(1);
+    rotateTrayInPosDirect(axis, 0.09, points, 0.05);
+    for(int i=0; i<rep; i++){
+        printf("\n-- rotate tray [-10º] on the X axis \n\n");
+        rotateTrayInPosDirect(axis, -0.18, points*2, 0.05);
+        yarp::os::Time::delay(0.5);
+        printf("\n-- rotate tray [+10º] on the X axis \n\n");
+        rotateTrayInPosDirect(axis, +0.18, points*2, 0.05);
+        yarp::os::Time::delay(0.5);
+    }
+
+    printf("\n-- recovering home position...\n\n");    
+    goToRefPosition(points, 0.05);    
 }
 
 void BalanceTray::run()
