@@ -2,6 +2,8 @@
 
 #include "BalanceTray.hpp"
 
+#define PT_MODE_MS 50.0
+
 namespace teo
 {
 
@@ -259,6 +261,36 @@ bool BalanceTray::updateModule()
    return true;
 }
 
+/************************************************************************/
+
+bool BalanceTray::executeTrajectory(std::vector<double> x, std::vector<double> xd, double duration, double maxvel)
+{
+    KdlTrajectory trajectory;
+    trajectory.setDuration(duration);
+    trajectory.setMaxVelocity(maxvel);
+    trajectory.addWaypoint(x);
+    trajectory.addWaypoint(xd);
+    trajectory.configurePath(ICartesianTrajectory::LINE);
+    trajectory.configureVelocityProfile(ICartesianTrajectory::TRAPEZOIDAL);
+
+    if (!trajectory.create())
+    {
+        CD_ERROR("Problem creating cartesian trajectory.\n");
+        return false;
+    }
+
+    BalanceThread balThread(rightArmIEncoders, leftArmIEncoders, rightArmICartesianSolver, leftArmICartesianSolver, PT_MODE_MS);
+
+    if (balThread.start())
+    {
+        yarp::os::Time::delay(duration);
+        balThread.stop();
+    }
+
+    jointDevice.close();
+
+    return true;
+}
 /************************************************************************/
 
 std::vector<std::vector<double> > BalanceTray::interpolate(std::vector<double> startPose, std::vector<double> endPose, int res)
@@ -733,7 +765,6 @@ bool BalanceTray::goToRefPosition(int points, double delay){
     }
     return true;
 }
-
 
 bool BalanceTray::homePosition(){
     // Prepare the last position        
