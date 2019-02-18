@@ -10,7 +10,7 @@
 #include "BalanceThread.hpp"
 
 
-#define DEFAULT_ROBOT "/teoSim" // teo or teoSim
+#define DEFAULT_ROBOT "/teo" // teo or teoSim
 
 using namespace yarp::os;
 using namespace roboticslab;

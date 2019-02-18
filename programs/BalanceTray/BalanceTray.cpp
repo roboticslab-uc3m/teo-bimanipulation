@@ -229,8 +229,14 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     printf("Put the tray and press a Key...\n");
     getchar();
     configArmsToPositionDirect();
+    saveRefPosition();
+    std::vector<double> destPosition = referencePosition[0];
+    destPosition[3] = destPosition[3] + 0.08;
+    executeTrajectory(referencePosition[0], destPosition, 5 , 0.05);
+    executeTrajectory(destPosition, referencePosition[0], 5 , 0.05);
     //checkLinearlyMovement(1,200,10);
-    checkRotateMovement(0, 100, 5);
+    //checkRotateMovement(0, 100, 5);
+
 
 
     return true;

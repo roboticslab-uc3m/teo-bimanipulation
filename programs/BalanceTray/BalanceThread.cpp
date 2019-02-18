@@ -32,20 +32,21 @@ void BalanceThread::run()
         return;
     }
 
-    /*
+
     // -- Left-Arm
-    std::vector<double> leftArmCurrentQ(6);
+    std::vector<double> leftArmCurrentQ(axes);
     if ( ! leftArmIEncoders->getEncoders( leftArmCurrentQ.data() ) ){
         CD_ERROR("Failed getEncoders of left-arm\n");
         return;
     }
     // inverse kinematic
-    std::vector<double> leftArmDesireQ(6);
+    std::vector<double> leftArmDesireQ(axes);
     if ( ! leftArmICartesianSolver->invKin(position, leftArmCurrentQ, leftArmDesireQ) )    {
         CD_ERROR("invKin failed.\n");
         return;
     }
-    */
+
 
     rightArmIPositionDirect->setPositions(rightArmDesireQ.data());
+    leftArmIPositionDirect->setPositions(leftArmDesireQ.data());
 }
