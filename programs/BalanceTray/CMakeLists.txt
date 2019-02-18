@@ -16,7 +16,7 @@ find_package(ROBOTICSLAB_KINEMATICS_DYNAMICS REQUIRED)
 include_directories(${YARP_INCLUDE_DIRS} ${TEMPLATE_NAME_INCLUDE_DIRS})
 link_directories(${TEMPLATE_NAME_LINK_DIRS})
 
-add_executable(${KEYWORD} BalanceTray.hpp BalanceTray.cpp BalanceThread.hpp BalanceThread.cpp)
+add_executable(${KEYWORD} main.cpp BalanceTray.hpp BalanceTray.cpp BalanceThread.hpp BalanceThread.cpp)
 target_link_libraries(${KEYWORD}
                     ${YARP_LIBRARIES}
                     ${TEMPLATE_NAME_LIBRARIES}

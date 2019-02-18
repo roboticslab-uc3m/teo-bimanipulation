@@ -279,15 +279,15 @@ bool BalanceTray::executeTrajectory(std::vector<double> x, std::vector<double> x
         return false;
     }
 
-    BalanceThread balThread(rightArmIEncoders, leftArmIEncoders, rightArmICartesianSolver, leftArmICartesianSolver, PT_MODE_MS);
+    BalanceThread balanceThread(rightArmIEncoders, leftArmIEncoders, rightArmICartesianSolver, leftArmICartesianSolver, &trajectory, rightArmIPositionDirect, leftArmIPositionDirect, PT_MODE_MS );
 
-    if (balThread.start())
+    if (balanceThread.start())
     {
         yarp::os::Time::delay(duration);
-        balThread.stop();
+        balanceThread.stop();
     }
 
-    jointDevice.close();
+    //jointDevice.close();
 
     return true;
 }

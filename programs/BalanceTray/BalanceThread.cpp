@@ -47,5 +47,5 @@ void BalanceThread::run()
     }
     */
 
-    iPosDirect->setPositions(refs.data());
+    rightArmIPositionDirect->setPositions(rightArmDesireQ.data());
 }

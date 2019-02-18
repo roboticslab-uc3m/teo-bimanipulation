@@ -16,8 +16,17 @@ public:
                   roboticslab::ICartesianSolver *rightArmICartesianSolver,
                   roboticslab::ICartesianSolver *leftArmICartesianSolver,
                   roboticslab::ICartesianTrajectory *iCartTrajectory,
+                  yarp::dev::IPositionDirect *rightArmIPositionDirect,
+                  yarp::dev::IPositionDirect *leftArmIPositionDirect,
                   int period)
         : yarp::os::RateThread(period),
+          rightArmIEncoders(rightArmIEncoders),
+          leftArmIEncoders(leftArmIEncoders),
+          rightArmICartesianSolver(rightArmICartesianSolver),
+          leftArmICartesianSolver(leftArmICartesianSolver),
+          iCartTrajectory(iCartTrajectory),
+          rightArmIPositionDirect(rightArmIPositionDirect),
+          leftArmIPositionDirect(leftArmIPositionDirect),
           axes(0),
           startTime(0)
     {}
@@ -30,6 +39,8 @@ private:
     yarp::dev::IEncoders *rightArmIEncoders, *leftArmIEncoders;
     roboticslab::ICartesianSolver *rightArmICartesianSolver, *leftArmICartesianSolver;
     roboticslab::ICartesianTrajectory * iCartTrajectory;
+    yarp::dev::IPositionDirect *rightArmIPositionDirect;
+    yarp::dev::IPositionDirect *leftArmIPositionDirect;
     int axes;
     double startTime;
 

@@ -89,6 +89,9 @@ namespace teo
             /** Interpolate function **/
             std::vector<std::vector<double> > interpolate(std::vector<double> startPose, std::vector<double> endPose, int res);
 
+            /** Execute trajectory using a thread and KdlTrajectory**/
+            bool executeTrajectory(std::vector<double> x, std::vector<double> xd, double duration, double maxvel);
+
             /** Configure functions **/
             bool configArmsToPosition(double sp, double acc);
             bool configArmsToPositionDirect();
