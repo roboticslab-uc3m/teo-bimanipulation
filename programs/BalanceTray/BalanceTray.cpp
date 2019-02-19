@@ -228,8 +228,7 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     showFKinAA();
     printf("Put the tray and press a Key...\n");
     getchar();
-    configArmsToPositionDirect();
-    saveRefPosition();
+    configArmsToPositionDirect();    
     checkRotateMovement();
 
     return true;
@@ -535,24 +534,48 @@ bool BalanceTray::rotateTray(int axis, double angle, double duration, double max
         return false;
     }
 
-    std::vector<double> rightArmFk(6);
-    if(! getRightArmFwdKin(&rightArmFk))
-        CD_ERROR("Doing Forward Kinematic of right-arm ...\n");
+    std::vector<double> rx, rdx;
+    std::vector<double> lx, ldx;
 
-    std::vector<double> leftArmFk(6);
-    if(! getLeftArmFwdKin(&leftArmFk))
-        CD_ERROR("Doing Forward Kinematic of left-arm ...\n");
+    if(!getRefPosition(&rx, &lx)){
+        CD_ERROR("Getting last position\n");
+        return false;
+    }
 
+    rdx = rx;
+    ldx = lx;
 
-    std::vector<double> rdestPoint = rightArmFk;
-    std::vector<double> ldestPoint = leftArmFk;
-    rdestPoint[axis+3] = rdestPoint[axis+3] + angle;
-    ldestPoint[axis+3] = ldestPoint[axis+3] + angle;
+    rdx[axis+3] = rdx[axis+3] + angle;
+    ldx[axis+3] = ldx[axis+3] + angle;
 
-    if(!executeTrajectory(rightArmFk, leftArmFk, rdestPoint, ldestPoint, duration, maxvel)){
+    setRefPosition(rdx, ldx);
+
+    // print values before executeTrajectory
+    printf("-> rx: [");
+    for(int i=0; i<rx.size(); i++)
+        printf("%f ",rx[i]);
+    printf("]\n ");
+
+    printf("-> lx: [");
+    for(int i=0; i<lx.size(); i++)
+        printf("%f ",lx[i]);
+    printf("]\n ");
+
+    printf("-> rdx: [");
+    for(int i=0; i<rdx.size(); i++)
+        printf("%f ",rdx[i]);
+    printf("]\n ");
+
+    printf("-> ldx: [");
+    for(int i=0; i<ldx.size(); i++)
+        printf("%f ",ldx[i]);
+    printf("]\n ");
+
+    if(!executeTrajectory(rx, lx, rdx, ldx, duration, maxvel)){
         CD_ERROR("Doing trajectory\n");
         return false;
     }
+    else CD_SUCCESS(":)\n");
     return true;
 
 }
@@ -599,35 +622,22 @@ void BalanceTray::showFKinAA(){
     printf("]\n ");
 }
 
-bool BalanceTray::saveRefPosition(){;
-    std::vector<double> rightArmPoint(6);
-    if(! getRightArmFwdKin(&rightArmPoint)){
-        CD_ERROR("Doing Forward Kinematic of right-arm...\n");
-        return false;
-    }
-    std::vector<double> leftArmPoint(6);
-    if(! getLeftArmFwdKin(&leftArmPoint)){
-        CD_ERROR("Doing Forward Kinematic of left-arm...\n");
-        return false;
-    }
+/**************** REF POSITIONS ****************/
+bool BalanceTray::setRefPosition(std::vector<double> rx, std::vector<double> lx){;
+    rightArmRefpos = rx;
+    leftArmRefpos = lx;
+    CD_SUCCESS("Saved reference position\n");
+    return true;
+}
 
-    referencePosition[0] = rightArmPoint;
-    referencePosition[1] = leftArmPoint;
-    CD_SUCCESS("Saved currect position\n");
+bool BalanceTray::getRefPosition(std::vector<double> *rx, std::vector<double> *lx){;
+    *rx = rightArmRefpos;
+    *lx = leftArmRefpos;
+    CD_SUCCESS("Got reference position\n");
     return true;
 }
 
 bool BalanceTray::goToRefPosition(double duration, double maxvel){
-
-    std::vector<double> rightArmFk(6);
-    if(! getRightArmFwdKin(&rightArmFk))
-        CD_ERROR("Doing Forward Kinematic of right-arm ...\n");
-
-    std::vector<double> leftArmFk(6);
-    if(! getLeftArmFwdKin(&leftArmFk))
-        CD_ERROR("Doing Forward Kinematic of left-arm ...\n");
-
-    executeTrajectory(rightArmFk, leftArmFk, referencePosition[0], referencePosition[1], duration , maxvel);
     return true;
 }
 
@@ -643,7 +653,16 @@ bool BalanceTray::homePosition(){
             CD_ERROR("\n");
             return false;
         }
-        saveRefPosition();
+
+        std::vector<double> rightArmFK(6);
+        if(! getRightArmFwdKin(&rightArmFK))
+            CD_ERROR("Doing Forward Kinematic of right-arm...\n");
+
+        std::vector<double> leftArmFK(6);
+        if(! getLeftArmFwdKin(&leftArmFK))
+            CD_ERROR("Doing Forward Kinematic of left-arm...\n");
+
+        setRefPosition(rightArmFK, leftArmFK);
         CD_SUCCESS("Home position [OK]\n");
         return true;
 }
@@ -663,18 +682,31 @@ void BalanceTray::checkRotateMovement(){
     rightArmThread = 0;
     leftArmThread = 0;
 
-    rotateTray(0, +0.08, 5, 0.05);
-    yarp::os::Time::delay(0.1);
+    rotateTray(0, +0.02, 2, 0.05);
     showFKinAA();
-    goToRefPosition(5, 0.05);
-    yarp::os::Time::delay(0.1);
+    getchar();
+
+    rotateTray(0, +0.02, 2, 0.05);
     showFKinAA();
-    rotateTray(0, -0.08, 5, 0.05);
-    yarp::os::Time::delay(0.1);
+    getchar();
+
+    rotateTray(0, +0.02, 2, 0.05);
     showFKinAA();
-    goToRefPosition(5, 0.05);
-    yarp::os::Time::delay(0.1);
+    getchar();
+
+    rotateTray(0, -0.02, 2, 0.05);
     showFKinAA();
+    getchar();
+
+    rotateTray(0, -0.02, 2, 0.05);
+    showFKinAA();
+    getchar();
+
+    rotateTray(0, -0.02, 2, 0.05);
+    showFKinAA();
+    getchar();
+
+
 
     rightArmThread->stop();
     leftArmThread->stop();

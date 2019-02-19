@@ -83,8 +83,10 @@ namespace teo
             BalanceThread * leftArmThread;
 
             /** Reference position functions **/
-            std::vector<double> referencePosition[2];
-            bool saveRefPosition();
+            std::vector<double> rightArmRefpos;
+            std::vector<double>  leftArmRefpos;
+            bool setRefPosition(std::vector<double> rx, std::vector<double> lx);
+            bool getRefPosition(std::vector<double> *rx, std::vector<double> *lx);
             bool goToRefPosition(double duration, double maxvel);
 
             /****** FUNCTIONS ******/
