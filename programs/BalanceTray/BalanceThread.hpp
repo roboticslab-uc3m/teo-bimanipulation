@@ -11,36 +11,35 @@
 class BalanceThread : public yarp::os::RateThread
 {
 public:
-    BalanceThread(yarp::dev::IEncoders *rightArmIEncoders,
-                  yarp::dev::IEncoders *leftArmIEncoders,
-                  roboticslab::ICartesianSolver *rightArmICartesianSolver,
-                  roboticslab::ICartesianSolver *leftArmICartesianSolver,
-                  roboticslab::ICartesianTrajectory *iCartTrajectory,
-                  yarp::dev::IPositionDirect *rightArmIPositionDirect,
-                  yarp::dev::IPositionDirect *leftArmIPositionDirect,
+    BalanceThread(yarp::dev::IEncoders *iEncoders,
+                  roboticslab::ICartesianSolver *iCartesianSolver,
+                  //roboticslab::ICartesianTrajectory *iCartTrajectory,
+                  yarp::dev::IPositionDirect *iPositionDirect,
                   int period)
         : yarp::os::RateThread(period),
-          rightArmIEncoders(rightArmIEncoders),
-          leftArmIEncoders(leftArmIEncoders),
-          rightArmICartesianSolver(rightArmICartesianSolver),
-          leftArmICartesianSolver(leftArmICartesianSolver),
-          iCartTrajectory(iCartTrajectory),
-          rightArmIPositionDirect(rightArmIPositionDirect),
-          leftArmIPositionDirect(leftArmIPositionDirect),
+          iEncoders(iEncoders),
+          iCartesianSolver(iCartesianSolver),
+          //iCartTrajectory(iCartTrajectory),
+          iPositionDirect(iPositionDirect),
           axes(0),
           startTime(0)
     {}
 
-protected:
+    void setICartesianTrajectory(roboticslab::ICartesianTrajectory *iCartTrajectory) {
+        this->iCartTrajectory = iCartTrajectory;
+    }
+
+    void resetTime();
+
+protected:    
     virtual bool threadInit();
     virtual void run();
 
 private:
-    yarp::dev::IEncoders *rightArmIEncoders, *leftArmIEncoders;
-    roboticslab::ICartesianSolver *rightArmICartesianSolver, *leftArmICartesianSolver;
+    yarp::dev::IEncoders *iEncoders;
+    roboticslab::ICartesianSolver *iCartesianSolver;
     roboticslab::ICartesianTrajectory * iCartTrajectory;
-    yarp::dev::IPositionDirect *rightArmIPositionDirect;
-    yarp::dev::IPositionDirect *leftArmIPositionDirect;
+    yarp::dev::IPositionDirect *iPositionDirect;
     int axes;
     double startTime;
 

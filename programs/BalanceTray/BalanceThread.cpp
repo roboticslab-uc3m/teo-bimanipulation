@@ -3,50 +3,48 @@
 #include "BalanceThread.hpp"
 #include <yarp/os/Time.h>
 #include <KdlVectorConverter.hpp>
-#include <KinematicRepresentation.hpp>
+#include "KinematicRepresentation.hpp"
 #include <ColorDebug.h>
+
+using namespace roboticslab;
 
 bool BalanceThread::threadInit()
 {
     startTime = yarp::os::Time::now();
-    return rightArmIEncoders->getAxes(&axes);
+    return iEncoders->getAxes(&axes);
+}
+
+void BalanceThread::resetTime()
+{
+  startTime = yarp::os::Time::now();
 }
 
 void BalanceThread::run()
 {
     double movementTime = yarp::os::Time::now() - startTime;
 
-    std::vector<double> position;
+    std::vector<double> position, positionInAA;
     iCartTrajectory->getPosition(movementTime, position);
 
-    // -- Right-Arm
-    std::vector<double> rightArmCurrentQ(axes);
-    if ( ! rightArmIEncoders->getEncoders( rightArmCurrentQ.data() ) ){
+    KinRepresentation::decodePose(position, positionInAA, KinRepresentation::CARTESIAN, KinRepresentation::AXIS_ANGLE, KinRepresentation::DEGREES );
+    CD_INFO_NO_HEADER("Poss: [");
+    for(int i=0; i<positionInAA.size(); i++){
+        CD_INFO_NO_HEADER("%f ",positionInAA[i]);
+    }
+    CD_INFO_NO_HEADER("] (%f)\n ", movementTime);
+
+
+    std::vector<double> currentQ(axes);
+    if ( ! iEncoders->getEncoders( currentQ.data() ) ){
         CD_ERROR("Failed getEncoders of right-arm\n");
         return;
     }
     // inverse kinematic
-    std::vector<double> rightArmDesireQ(axes);
-    if ( ! rightArmICartesianSolver->invKin(position, rightArmCurrentQ, rightArmDesireQ) )    {
+    std::vector<double> desireQ(axes);
+    if ( ! iCartesianSolver->invKin(position, currentQ, desireQ) )    {
         CD_ERROR("invKin failed.\n");
         return;
     }
 
-
-    // -- Left-Arm
-    std::vector<double> leftArmCurrentQ(axes);
-    if ( ! leftArmIEncoders->getEncoders( leftArmCurrentQ.data() ) ){
-        CD_ERROR("Failed getEncoders of left-arm\n");
-        return;
-    }
-    // inverse kinematic
-    std::vector<double> leftArmDesireQ(axes);
-    if ( ! leftArmICartesianSolver->invKin(position, leftArmCurrentQ, leftArmDesireQ) )    {
-        CD_ERROR("invKin failed.\n");
-        return;
-    }
-
-
-    rightArmIPositionDirect->setPositions(rightArmDesireQ.data());
-    leftArmIPositionDirect->setPositions(leftArmDesireQ.data());
+    iPositionDirect->setPositions(desireQ.data());
 }
