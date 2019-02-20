@@ -5,6 +5,9 @@
 #include "ColorDebug.h"
 #include "ICartesianSolver.h"
 #include "KinematicRepresentation.hpp"
+#include <KdlTrajectory.hpp>
+#include <ICartesianTrajectory.hpp>
+#include "BalanceThread.hpp"
 
 
 #define DEFAULT_ROBOT "/teo" // teo or teoSim
@@ -76,15 +79,20 @@ namespace teo
             /** Forward Kinematic function **/
             bool getLeftArmFwdKin(std::vector<double> *currentX);
 
+            BalanceThread * rightArmThread;
+            BalanceThread * leftArmThread;
+
             /** Reference position functions **/
-            std::vector<double> referencePosition[2];
-            bool saveRefPosition();
-            bool goToRefPosition(int points, double delay);
+            std::vector<double> rightArmRefpos;
+            std::vector<double>  leftArmRefpos;
+            bool setRefPosition(std::vector<double> rx, std::vector<double> lx);
+            bool getRefPosition(std::vector<double> *rx, std::vector<double> *lx);
+            bool goToRefPosition(double duration, double maxvel);
 
-            /****** FUNCTIONS ******/
+            /****** FUNCTIONS ******/            
 
-            /** Interpolate function **/
-            std::vector<std::vector<double> > interpolate(std::vector<double> startPose, std::vector<double> endPose, int res);
+            /** Execute trajectory using a thread and KdlTrajectory**/
+            bool executeTrajectory(std::vector<double> rx, std::vector<double> lx, std::vector<double> rxd, std::vector<double> lxd, double duration, double maxvel);
 
             /** Configure functions **/
             bool configArmsToPosition(double sp, double acc);
@@ -96,17 +104,18 @@ namespace teo
 
             /** Modes to move the tray **/
             bool homePosition(); // initial pos
-            bool rotateTrayInPosDirect(int axis, double angle, int points, double delay);
-            bool moveTrayLinearlyInPosDirect(int axis, double dist, int points, double delay);
-            bool recoverPosition(int points, double delay);
+
+            /** Moving the tray **/
+            bool moveTrayLinearly(int axis, double dist, double duration, double maxvel);
+            bool rotateTray(int axis, double angle, double duration, double maxvel);
 
             /** Check movements functions */
-            void checkLinearlyMovement(int axis, int points, int rep);
-            void checkRotateMovement(int axis, int points, int rep );
+            void checkLinearlyMovement();
+            void checkRotateMovement();
 
             /** Show information **/
-            void showArmsFKinAAS();
-            void showArmsFKinAA();
+            void showFKinAAS();
+            void showFKinAA();
 
             /** movement finished */
             bool done;

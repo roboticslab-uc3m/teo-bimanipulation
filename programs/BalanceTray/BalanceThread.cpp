@@ -1,0 +1,50 @@
+// -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*-
+
+#include "BalanceThread.hpp"
+#include <yarp/os/Time.h>
+#include <KdlVectorConverter.hpp>
+#include "KinematicRepresentation.hpp"
+#include <ColorDebug.h>
+
+using namespace roboticslab;
+
+bool BalanceThread::threadInit()
+{
+    startTime = yarp::os::Time::now();
+    return iEncoders->getAxes(&axes);
+}
+
+void BalanceThread::resetTime()
+{
+  startTime = yarp::os::Time::now();
+}
+
+void BalanceThread::run()
+{
+    double movementTime = yarp::os::Time::now() - startTime;
+
+    std::vector<double> position, positionInAA;
+    iCartTrajectory->getPosition(movementTime, position);
+
+    KinRepresentation::decodePose(position, positionInAA, KinRepresentation::CARTESIAN, KinRepresentation::AXIS_ANGLE, KinRepresentation::DEGREES );
+    CD_INFO_NO_HEADER("Poss: [");
+    for(int i=0; i<positionInAA.size(); i++){
+        CD_INFO_NO_HEADER("%f ",positionInAA[i]);
+    }
+    CD_INFO_NO_HEADER("] (%f)\n ", movementTime);
+
+
+    std::vector<double> currentQ(axes);
+    if ( ! iEncoders->getEncoders( currentQ.data() ) ){
+        CD_ERROR("Failed getEncoders of right-arm\n");
+        return;
+    }
+    // inverse kinematic
+    std::vector<double> desireQ(axes);
+    if ( ! iCartesianSolver->invKin(position, currentQ, desireQ) )    {
+        CD_ERROR("invKin failed.\n");
+        return;
+    }
+
+    iPositionDirect->setPositions(desireQ.data());
+}

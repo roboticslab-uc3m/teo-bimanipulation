@@ -6,38 +6,25 @@ IF (ENABLE_balanceTray)
 
 set(KEYWORD "balanceTray")
 
-# Find YARP.
+
 find_package(YARP REQUIRED)
-# Para que nos reconozca la librería KinematicRepresentation, buscamos en el CMakeList principal de kinematics dynamics
-# En install_basic_package_files encontramos el nombre del paquete que buscamos: ROBOTICSLAB_KINEMATICS_DYNAMICS
+find_package(COLOR_DEBUG REQUIRED)
+find_package(orocos_kdl 1.4 QUIET)
 find_package(ROBOTICSLAB_KINEMATICS_DYNAMICS REQUIRED)
 
-# Search for source code.
-file(GLOB folder_source *.cpp *.cc *.c)
-file(GLOB folder_header *.h)
-source_group("Source Files" FILES ${folder_source})
-source_group("Header Files" FILES ${folder_header})
-
-# Automatically add include directories if needed.
-foreach(header_file ${folder_header})
-  get_filename_component(p ${header_file} PATH)
-  include_directories(${p})
-endforeach(header_file ${folder_header})
 
 include_directories(${YARP_INCLUDE_DIRS} ${TEMPLATE_NAME_INCLUDE_DIRS})
-
 link_directories(${TEMPLATE_NAME_LINK_DIRS})
 
-# Set up our main executable.
-if (folder_source)
-  add_executable(${KEYWORD} ${folder_source} ${folder_header})
-  # linkamos la libreria KinematicRepresentationLib. Ponemos primero el namespace ROBOTICSLAB y luego el nombre de la libreria.
-  # Podemos encontrar el nombre en el CMakeList de la librería: KinematicRepresentationLib
-  target_link_libraries(${KEYWORD} ${YARP_LIBRARIES} ${TEMPLATE_NAME_LIBRARIES} ROBOTICSLAB::KinematicRepresentationLib)
-  install(TARGETS ${KEYWORD} DESTINATION bin)
-else (folder_source)
-  message(FATAL_ERROR "No source code files found. Please add something")
-endif (folder_source)
+add_executable(${KEYWORD} main.cpp BalanceTray.hpp BalanceTray.cpp BalanceThread.hpp BalanceThread.cpp)
+target_link_libraries(${KEYWORD}
+                    ${YARP_LIBRARIES}
+                    ${TEMPLATE_NAME_LIBRARIES}
+                    ROBOTICSLAB::KdlVectorConverterLib
+                    ROBOTICSLAB::KinematicRepresentationLib
+                    ROBOTICSLAB::TrajectoryLib
+                    ROBOTICSLAB::ColorDebug)
+install(TARGETS ${KEYWORD} DESTINATION bin)
 
 ENDIF (ENABLE_balanceTray)
 
