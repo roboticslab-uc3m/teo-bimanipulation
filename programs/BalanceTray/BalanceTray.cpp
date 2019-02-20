@@ -25,6 +25,26 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
 
     std::string balanceTrayStr("/balanceTray");
 
+    // ------ ANALOG SENSOR ------
+
+    yarp::os::Property options;
+        options.put("device","Jr3");
+
+    yarp::dev::PolyDriver jr3card(options);
+        if(!jr3card.isValid()) {
+          std::printf("Device not available.\n");
+          jr3card.close();
+          yarp::os::Network::fini();
+          return 1;
+    }
+
+    if ( ! jr3card.view(iAnalogSensor) )
+        {
+            CD_ERROR("Problems acquiring JR3 interface\n");
+            return 1;
+        }
+    CD_SUCCESS("Acquired JR3 interface\n");
+
     // ------ RIGHT ARM -------
 
     yarp::os::Property rightArmOptions;
@@ -223,13 +243,23 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     rightArmICartesianSolver->appendLink(twist_right_N_T);
     leftArmICartesianSolver->appendLink(twist_left_N_T);
 
-    //Start operations:
+    // Start operations:
     homePosition();
     showFKinAA();
     printf("Put the tray and press a Key...\n");
-    getchar();
-    configArmsToPositionDirect();    
-    checkRotateMovement();
+    getchar();    
+    iAnalogSensor->calibrateSensor();
+    configArmsToPositionDirect();
+
+
+    reading = true;
+    rightArmThread = 0;
+    leftArmThread = 0;
+
+    while(reading){
+        readJR3Sensor();
+    }
+
 
     return true;
 }
@@ -241,6 +271,7 @@ bool BalanceTray::interruptModule()
     this->stop(); // stop the thread
     rightArmDevice.close();
     leftArmDevice.close();
+    reading = false;
     return true;
 }
 
@@ -259,8 +290,75 @@ bool BalanceTray::updateModule()
    return true;
 }
 
+/************************************************************************/
+
+bool BalanceTray::threadInit(){
+
+    return true;
+}
 
 /************************************************************************/
+
+void BalanceTray::run()
+{
+    while( !Thread::isStopping() )
+    {
+
+    // sensor reading
+
+
+
+   } // while
+}
+
+bool BalanceTray::readJR3Sensor(){
+
+    yarp::sig::Vector sensorValues;
+    int ret = iAnalogSensor->read(sensorValues);
+
+    if (ret == yarp::dev::IAnalogSensor::AS_OK)
+    {
+        printf("4 \n");
+        printf("Left wrist: ( ");
+        for(int i=12; i<18; i++)
+            printf("%f ",sensorValues[i]);
+        printf(")\n ");
+
+        printf("Right wrist: ( ");
+        for(int i=18; i<24; i++)
+            printf("%f ",sensorValues[i]);
+        printf(")\n ");
+
+        double distance = 0.0;
+
+        if(sensorValues[13] > +0.8){
+            CD_DEBUG("+13\n");
+            distance+=0.001;
+            rotateTray(0, distance, 1, 0.05);
+        }
+
+        if(sensorValues[13] < -0.8){
+            CD_DEBUG("-13\n");
+            distance-=0.001;
+            rotateTray(0, distance, 1, 0.05);
+        }
+
+        if(sensorValues[19] < -0.8){
+            CD_DEBUG("(-)19\n");
+            distance-=0.001;
+            rotateTray(0, distance, 0.1, 0.05);
+        }
+
+        if(sensorValues[19] > +0.8){
+            CD_DEBUG("(+)19\n");
+            distance+=0.001;
+            rotateTray(0, distance, 0.1, 0.05);
+        }
+    }
+    else CD_ERROR("Reading JR3\n");
+    yarp::os::Time::delay(0.01);
+}
+
 
 bool BalanceTray::getRightArmFwdKin(std::vector<double> *currentX)
 {
@@ -440,7 +538,7 @@ bool BalanceTray::executeTrajectory(std::vector<double> rx, std::vector<double> 
     rightArmTraj.addWaypoint(rx);
     rightArmTraj.addWaypoint(rxd);
     rightArmTraj.configurePath(ICartesianTrajectory::LINE);
-    rightArmTraj.configureVelocityProfile(ICartesianTrajectory::TRAPEZOIDAL);
+    rightArmTraj.configureVelocityProfile(ICartesianTrajectory::RECTANGULAR);
 
     if (!rightArmTraj.create())
     {
@@ -455,7 +553,7 @@ bool BalanceTray::executeTrajectory(std::vector<double> rx, std::vector<double> 
     leftArmTraj.addWaypoint(lx);
     leftArmTraj.addWaypoint(lxd);
     leftArmTraj.configurePath(ICartesianTrajectory::LINE);
-    leftArmTraj.configureVelocityProfile(ICartesianTrajectory::TRAPEZOIDAL);
+    leftArmTraj.configureVelocityProfile(ICartesianTrajectory::RECTANGULAR);
 
     if (!leftArmTraj.create())
     {
@@ -516,7 +614,7 @@ bool BalanceTray::rotateTray(int axis, double angle, double duration, double max
     ldx[axis+3] = ldx[axis+3] + angle;
 
     if(setRefPosition(rdx, ldx))
-        CD_SUCCESS("Saved reference position\n");
+        CD_SUCCESS("Saved reference position\n");    
 
     if(!executeTrajectory(rx, lx, rdx, ldx, duration, maxvel)){
         CD_ERROR("Doing trajectory\n");
@@ -562,7 +660,9 @@ bool BalanceTray::homePosition(){
         if(! getLeftArmFwdKin(&leftArmFK))
             CD_ERROR("Doing Forward Kinematic of left-arm...\n");
 
-        setRefPosition(rightArmFK, leftArmFK);
+        if(setRefPosition(rightArmFK, leftArmFK))
+            CD_SUCCESS("Reference position saved\n");
+
         CD_SUCCESS("Home position [OK]\n");
         return true;
 }
@@ -610,8 +710,7 @@ void BalanceTray::showFKinAA(){
 }
 
 void BalanceTray::checkRotateMovement(){
-    rightArmThread = 0;
-    leftArmThread = 0;
+
 
     rotateTray(0, +0.02, 2, 0.05);
     showFKinAA();    
@@ -640,10 +739,7 @@ void BalanceTray::checkRotateMovement(){
     leftArmThread = 0;
 }
 
-void BalanceTray::run()
-{
 
-}
 
 }  // namespace teo
 

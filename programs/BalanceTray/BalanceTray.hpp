@@ -1,12 +1,14 @@
 // -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*-
-#include <string>
+
 #include <yarp/os/all.h>
 #include <yarp/dev/all.h>
+#include <yarp/dev/IAnalogSensor.h>
 #include "ColorDebug.h"
 #include "ICartesianSolver.h"
-#include "KinematicRepresentation.hpp"
-#include <KdlTrajectory.hpp>
 #include <ICartesianTrajectory.hpp>
+#include <KdlTrajectory.hpp>
+#include "KinematicRepresentation.hpp"
+
 #include "BalanceThread.hpp"
 
 
@@ -55,6 +57,8 @@ namespace teo
             /** Solver device **/
             yarp::dev::PolyDriver rightArmSolverDevice;
             ICartesianSolver *rightArmICartesianSolver;
+            /** Thread of right-arm movement **/
+            BalanceThread *rightArmThread;
             /** Forward Kinematic function **/
             bool getRightArmFwdKin(std::vector<double> *currentX);
 
@@ -76,18 +80,21 @@ namespace teo
             /** Solver device **/
             yarp::dev::PolyDriver leftArmSolverDevice;
             ICartesianSolver *leftArmICartesianSolver;
+            /** Thread of left-arm movement **/
+            BalanceThread *leftArmThread;
             /** Forward Kinematic function **/
             bool getLeftArmFwdKin(std::vector<double> *currentX);
 
-            BalanceThread * rightArmThread;
-            BalanceThread * leftArmThread;
+            /** JR3 device **/
+            yarp::dev::IAnalogSensor *iAnalogSensor;
+            bool reading;
+            bool readJR3Sensor();
 
             /** Reference position functions **/
             std::vector<double> rightArmRefpos;
             std::vector<double>  leftArmRefpos;
             bool setRefPosition(std::vector<double> rx, std::vector<double> lx);
             bool getRefPosition(std::vector<double> *rx, std::vector<double> *lx);
-            bool goToRefPosition(double duration, double maxvel);
 
             /****** FUNCTIONS ******/            
 
@@ -124,6 +131,7 @@ namespace teo
             yarp::os::RpcServer inDialogPort;
 
             /** Thread run */
+            virtual bool threadInit();
             virtual void run();
 
 
