@@ -526,6 +526,47 @@ bool BalanceTray::rotateTray(int axis, double angle, double duration, double max
     return true;
 }
 
+/************ REF POSITIONS *************************/
+
+bool BalanceTray::setRefPosition(std::vector<double> rx, std::vector<double> lx){;
+    rightArmRefpos = rx;
+    leftArmRefpos = lx;
+    return true;
+}
+
+bool BalanceTray::getRefPosition(std::vector<double> *rx, std::vector<double> *lx){;
+    *rx = rightArmRefpos;
+    *lx = leftArmRefpos;
+    CD_SUCCESS("Got reference position\n");
+    return true;
+}
+
+bool BalanceTray::homePosition(){
+    // Prepare the last position        
+        CD_INFO("Preparing position...\n");
+        configArmsToPosition(25,25);
+        double rightArmPoss[7] = { 30.0, -25.5, -28.6,  78.7, -57.5,  70.6};
+        double leftArmPoss[7]  = {-30.0,  25.5,  28.6, -78.7,  57.5, -70.6};
+        std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+7); //teoSim (+6) teo (+7)
+        std::vector<double> leftArm(&leftArmPoss[0], &leftArmPoss[0]+7);
+        if(!moveJointsInPosition(rightArm, leftArm)){
+            CD_ERROR("\n");
+            return false;
+        }
+
+        std::vector<double> rightArmFK(6);
+        if(! getRightArmFwdKin(&rightArmFK))
+            CD_ERROR("Doing Forward Kinematic of right-arm...\n");
+
+        std::vector<double> leftArmFK(6);
+        if(! getLeftArmFwdKin(&leftArmFK))
+            CD_ERROR("Doing Forward Kinematic of left-arm...\n");
+
+        setRefPosition(rightArmFK, leftArmFK);
+        CD_SUCCESS("Home position [OK]\n");
+        return true;
+}
+
 /************ SHOWING FK ****************************/
 
 void BalanceTray::showFKinAAS(){
@@ -568,47 +609,6 @@ void BalanceTray::showFKinAA(){
     printf("]\n ");
 }
 
-/************ REF POSITIONS *************************/
-
-bool BalanceTray::setRefPosition(std::vector<double> rx, std::vector<double> lx){;
-    rightArmRefpos = rx;
-    leftArmRefpos = lx;
-    return true;
-}
-
-bool BalanceTray::getRefPosition(std::vector<double> *rx, std::vector<double> *lx){;
-    *rx = rightArmRefpos;
-    *lx = leftArmRefpos;
-    CD_SUCCESS("Got reference position\n");
-    return true;
-}
-
-bool BalanceTray::homePosition(){
-    // Prepare the last position        
-        CD_INFO("Preparing position...\n");
-        configArmsToPosition(25,25);
-        double rightArmPoss[7] = { 30.0, -25.5, -28.6,  78.7, -57.5,  70.6};
-        double leftArmPoss[7]  = {-30.0,  25.5,  28.6, -78.7,  57.5, -70.6};
-        std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+7); //teoSim (+6) teo (+7)
-        std::vector<double> leftArm(&leftArmPoss[0], &leftArmPoss[0]+7);
-        if(!moveJointsInPosition(rightArm, leftArm)){
-            CD_ERROR("\n");
-            return false;
-        }
-
-        std::vector<double> rightArmFK(6);
-        if(! getRightArmFwdKin(&rightArmFK))
-            CD_ERROR("Doing Forward Kinematic of right-arm...\n");
-
-        std::vector<double> leftArmFK(6);
-        if(! getLeftArmFwdKin(&leftArmFK))
-            CD_ERROR("Doing Forward Kinematic of left-arm...\n");
-
-        setRefPosition(rightArmFK, leftArmFK);
-        CD_SUCCESS("Home position [OK]\n");
-        return true;
-}
-
 void BalanceTray::checkRotateMovement(){
     rightArmThread = 0;
     leftArmThread = 0;
@@ -630,10 +630,6 @@ void BalanceTray::checkRotateMovement(){
 
     rotateTray(0, +0.02, 2, 0.05);
     showFKinAA();
-
-
-
-
 
 
     rightArmThread->stop();
