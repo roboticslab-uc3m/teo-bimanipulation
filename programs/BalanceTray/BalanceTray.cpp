@@ -259,33 +259,6 @@ bool BalanceTray::updateModule()
    return true;
 }
 
-/************************************************************************/
-
-/************************************************************************/
-
-std::vector<std::vector<double> > BalanceTray::interpolate(std::vector<double> startPose, std::vector<double> endPose, int res)
-{
-    //printf("------ Interpolation results ------\n");
-    // vector de vectores: se trata de un vector que contiene el conjunto de vectores
-    int vsize = startPose.size(); // 6 for AXIS_ANGLE_SCALED / 7 for AXIS_ANGLE
-    std::vector<std::vector<double> > path (res, std::vector<double>(vsize)); //path (poses)
-    std::vector<double> factor(vsize);
-    for(int i=0; i<vsize;i++){
-        factor[i] = (endPose[i]-startPose[i])/res;
-    }
-
-    for(int v=0; v<res; v++){
-        //CD_INFO_NO_HEADER("pose (%d): (", v+1);
-        for(int i=0; i<vsize; i++){
-            path[v][i]=((v+1)*factor[i]) + startPose[i];
-            //CD_INFO_NO_HEADER("%f ",path[v][i]);
-        }
-        //CD_INFO_NO_HEADER(")\n ");
-    }
-
-    //CD_INFO_NO_HEADER("------------------------------------\n");
-    return path;
-}
 
 /************************************************************************/
 
@@ -411,7 +384,7 @@ bool BalanceTray::configArmsToPositionDirect(){
         return true;
 }
 
-/******************* MODES TO MOVE THE JOINTS **************************/
+/************ MODES TO MOVE THE JOINTS **************/
 
 bool BalanceTray::moveJointsInPosition(std::vector<double> &rightArm, std::vector<double>& leftArm)
 {
@@ -456,7 +429,7 @@ bool BalanceTray::moveJointsInPositionDirect(std::vector<double> &rightArm, std:
     return true;
 }
 
-/*********************** EXECUTE TRAJECTORY ****************************/
+/************ EXECUTE TRAJECTORY ********************/
 
 bool BalanceTray::executeTrajectory(std::vector<double> rx, std::vector<double> lx, std::vector<double> rxd, std::vector<double> lxd, double duration, double maxvel)
 {
@@ -502,7 +475,6 @@ bool BalanceTray::executeTrajectory(std::vector<double> rx, std::vector<double> 
 
     if (rightArmThread->isSuspended() && leftArmThread->isSuspended())
     {
-        CD_INFO("Resume thread...\n");
         rightArmThread->resetTime();
         leftArmThread->resetTime();
         rightArmThread->resume();
@@ -510,7 +482,6 @@ bool BalanceTray::executeTrajectory(std::vector<double> rx, std::vector<double> 
     }
     else
     {
-        CD_INFO("Start thread...\n");
         rightArmThread->start();
         leftArmThread->start();
     }
@@ -520,10 +491,6 @@ bool BalanceTray::executeTrajectory(std::vector<double> rx, std::vector<double> 
     leftArmThread->suspend();
 
     return true;
-}
-
-bool BalanceTray::moveTrayLinearly(int axis, double dist, double duration, double maxvel){
-
 }
 
 bool BalanceTray::rotateTray(int axis, double angle, double duration, double maxvel){
@@ -548,39 +515,18 @@ bool BalanceTray::rotateTray(int axis, double angle, double duration, double max
     rdx[axis+3] = rdx[axis+3] + angle;
     ldx[axis+3] = ldx[axis+3] + angle;
 
-    setRefPosition(rdx, ldx);
-
-    // print values before executeTrajectory
-    printf("-> rx: [");
-    for(int i=0; i<rx.size(); i++)
-        printf("%f ",rx[i]);
-    printf("]\n ");
-
-    printf("-> lx: [");
-    for(int i=0; i<lx.size(); i++)
-        printf("%f ",lx[i]);
-    printf("]\n ");
-
-    printf("-> rdx: [");
-    for(int i=0; i<rdx.size(); i++)
-        printf("%f ",rdx[i]);
-    printf("]\n ");
-
-    printf("-> ldx: [");
-    for(int i=0; i<ldx.size(); i++)
-        printf("%f ",ldx[i]);
-    printf("]\n ");
+    if(setRefPosition(rdx, ldx))
+        CD_SUCCESS("Saved reference position\n");
 
     if(!executeTrajectory(rx, lx, rdx, ldx, duration, maxvel)){
         CD_ERROR("Doing trajectory\n");
         return false;
     }
-    else CD_SUCCESS(":)\n");
-    return true;
 
+    return true;
 }
 
-/*********************** SHOWING FK ****************************/
+/************ SHOWING FK ****************************/
 
 void BalanceTray::showFKinAAS(){
     printf("R-arm pose : [");
@@ -622,11 +568,11 @@ void BalanceTray::showFKinAA(){
     printf("]\n ");
 }
 
-/**************** REF POSITIONS ****************/
+/************ REF POSITIONS *************************/
+
 bool BalanceTray::setRefPosition(std::vector<double> rx, std::vector<double> lx){;
     rightArmRefpos = rx;
     leftArmRefpos = lx;
-    CD_SUCCESS("Saved reference position\n");
     return true;
 }
 
@@ -634,10 +580,6 @@ bool BalanceTray::getRefPosition(std::vector<double> *rx, std::vector<double> *l
     *rx = rightArmRefpos;
     *lx = leftArmRefpos;
     CD_SUCCESS("Got reference position\n");
-    return true;
-}
-
-bool BalanceTray::goToRefPosition(double duration, double maxvel){
     return true;
 }
 
@@ -667,44 +609,30 @@ bool BalanceTray::homePosition(){
         return true;
 }
 
-void BalanceTray::checkLinearlyMovement(){
-    moveTrayLinearly(1, +0.06, 5, 0.05);
-    moveTrayLinearly(1, -0.12, 5, 0.05);
-    goToRefPosition(5, 0.05);
-    moveTrayLinearly(0, +0.04, 5, 0.05);
-    moveTrayLinearly(0, -0.08, 5, 0.05);
-    goToRefPosition(5, 0.05);
-}
-
-
-
 void BalanceTray::checkRotateMovement(){
     rightArmThread = 0;
     leftArmThread = 0;
 
     rotateTray(0, +0.02, 2, 0.05);
+    showFKinAA();    
+
+    rotateTray(0, -0.04, 2, 0.05);
     showFKinAA();
-    getchar();
+
+
+    rotateTray(0, +0.04, 2, 0.05);
+    showFKinAA();
+
+
+    rotateTray(0, -0.04, 2, 0.05);
+    showFKinAA();
+
 
     rotateTray(0, +0.02, 2, 0.05);
     showFKinAA();
-    getchar();
 
-    rotateTray(0, +0.02, 2, 0.05);
-    showFKinAA();
-    getchar();
 
-    rotateTray(0, -0.02, 2, 0.05);
-    showFKinAA();
-    getchar();
 
-    rotateTray(0, -0.02, 2, 0.05);
-    showFKinAA();
-    getchar();
-
-    rotateTray(0, -0.02, 2, 0.05);
-    showFKinAA();
-    getchar();
 
 
 

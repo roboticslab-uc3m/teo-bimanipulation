@@ -89,10 +89,7 @@ namespace teo
             bool getRefPosition(std::vector<double> *rx, std::vector<double> *lx);
             bool goToRefPosition(double duration, double maxvel);
 
-            /****** FUNCTIONS ******/
-
-            /** Interpolate function **/
-            std::vector<std::vector<double> > interpolate(std::vector<double> startPose, std::vector<double> endPose, int res);
+            /****** FUNCTIONS ******/            
 
             /** Execute trajectory using a thread and KdlTrajectory**/
             bool executeTrajectory(std::vector<double> rx, std::vector<double> lx, std::vector<double> rxd, std::vector<double> lxd, double duration, double maxvel);
