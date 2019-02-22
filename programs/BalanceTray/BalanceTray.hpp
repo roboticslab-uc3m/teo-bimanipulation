@@ -9,10 +9,11 @@
 #include <KdlTrajectory.hpp>
 #include "KinematicRepresentation.hpp"
 
+#include "TrajectoryThread.hpp"
 #include "BalanceThread.hpp"
 
 
-#define DEFAULT_ROBOT "/teo" // teo or teoSim
+#define DEFAULT_ROBOT "/teoSim" // teo or teoSim
 
 using namespace yarp::os;
 using namespace roboticslab;
@@ -57,8 +58,10 @@ namespace teo
             /** Solver device **/
             yarp::dev::PolyDriver rightArmSolverDevice;
             ICartesianSolver *rightArmICartesianSolver;
-            /** Thread of right-arm movement **/
-            BalanceThread *rightArmThread;
+            /** Thread of right-arm KDL trajectory generator **/
+            TrajectoryThread *rightArmTrajThread;
+            /** Thread of right-arm Point2Point movement **/
+            BalanceThread *rightArmBalThread;
             /** Forward Kinematic function **/
             bool getRightArmFwdKin(std::vector<double> *currentX);
 
@@ -80,8 +83,10 @@ namespace teo
             /** Solver device **/
             yarp::dev::PolyDriver leftArmSolverDevice;
             ICartesianSolver *leftArmICartesianSolver;
-            /** Thread of left-arm movement **/
-            BalanceThread *leftArmThread;
+            /** Thread of left-arm KDL trajectory generator **/
+            TrajectoryThread *leftArmTrajThread;
+            /** Thread of left-arm Point2Point movement **/
+            BalanceThread *leftArmBalThread;
             /** Forward Kinematic function **/
             bool getLeftArmFwdKin(std::vector<double> *currentX);
 
@@ -114,7 +119,8 @@ namespace teo
 
             /** Moving the tray **/
             bool moveTrayLinearly(int axis, double dist, double duration, double maxvel);
-            bool rotateTray(int axis, double angle, double duration, double maxvel);
+            bool rotateTrayByTraj(int axis, double angle, double duration, double maxvel);
+            bool rotateTrayByP2P(int axis, double value);
 
             /** Check movements functions */
             void checkLinearlyMovement();

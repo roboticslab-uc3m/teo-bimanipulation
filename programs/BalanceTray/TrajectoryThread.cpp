@@ -1,6 +1,6 @@
 // -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*-
 
-#include "BalanceThread.hpp"
+#include "TrajectoryThread.hpp"
 #include <yarp/os/Time.h>
 #include <KdlVectorConverter.hpp>
 #include "KinematicRepresentation.hpp"
@@ -8,29 +8,32 @@
 
 using namespace roboticslab;
 
-bool BalanceThread::threadInit()
+bool TrajectoryThread::threadInit()
 {
-    //startTime = yarp::os::Time::now();
+    startTime = yarp::os::Time::now();
     return iEncoders->getAxes(&axes);
 }
 
-
-void BalanceThread::run()
+void TrajectoryThread::resetTime()
 {
-    //double movementTime = yarp::os::Time::now() - startTime;
+  startTime = yarp::os::Time::now();
+}
+
+void TrajectoryThread::run()
+{
+    double movementTime = yarp::os::Time::now() - startTime;
 
     std::vector<double> position, positionInAA;
-    getCartesianPosition(&position);
-
+    iCartTrajectory->getPosition(movementTime, position);
 
     KinRepresentation::decodePose(position, positionInAA, KinRepresentation::CARTESIAN, KinRepresentation::AXIS_ANGLE, KinRepresentation::DEGREES );
-
+    /*
     CD_DEBUG_NO_HEADER("Poss: [");
     for(int i=0; i<positionInAA.size(); i++){
         CD_DEBUG_NO_HEADER("%f ",positionInAA[i]);
     }
-    CD_DEBUG_NO_HEADER("]\n ");
-
+    CD_DEBUG_NO_HEADER("] (%f)\n ", movementTime);
+    */
 
     std::vector<double> currentQ(axes);
     if ( ! iEncoders->getEncoders( currentQ.data() ) ){
@@ -46,3 +49,4 @@ void BalanceThread::run()
 
     iPositionDirect->setPositions(desireQ.data());
 }
+

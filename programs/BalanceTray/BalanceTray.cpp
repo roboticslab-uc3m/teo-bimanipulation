@@ -251,14 +251,18 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     iAnalogSensor->calibrateSensor();
     configArmsToPositionDirect();
 
-
+    /*
     reading = true;
-    rightArmThread = 0;
-    leftArmThread = 0;
+    rightArmBalThread = 0;
+    leftArmBalThread = 0;
 
     while(reading){
         readJR3Sensor();
     }
+    */
+    rightArmBalThread = 0;
+    leftArmBalThread = 0;
+    checkRotateMovement();
 
 
     return true;
@@ -334,25 +338,25 @@ bool BalanceTray::readJR3Sensor(){
         if(sensorValues[13] > +0.8){
             CD_DEBUG("+13\n");
             distance+=0.001;
-            rotateTray(0, distance, 1, 0.05);
+            rotateTrayByP2P(0, distance);
         }
 
         if(sensorValues[13] < -0.8){
             CD_DEBUG("-13\n");
             distance-=0.001;
-            rotateTray(0, distance, 1, 0.05);
+            rotateTrayByP2P(0, distance);
         }
 
         if(sensorValues[19] < -0.8){
             CD_DEBUG("(-)19\n");
             distance-=0.001;
-            rotateTray(0, distance, 0.1, 0.05);
+            rotateTrayByP2P(0, distance);
         }
 
         if(sensorValues[19] > +0.8){
             CD_DEBUG("(+)19\n");
             distance+=0.001;
-            rotateTray(0, distance, 0.1, 0.05);
+            rotateTrayByP2P(0, distance);
         }
     }
     else CD_ERROR("Reading JR3\n");
@@ -561,37 +565,37 @@ bool BalanceTray::executeTrajectory(std::vector<double> rx, std::vector<double> 
         return false;
     }
 
-    if (rightArmThread == 0)
-        rightArmThread = new BalanceThread(rightArmIEncoders, rightArmICartesianSolver, rightArmIPositionDirect, PT_MODE_MS );
+    if (rightArmTrajThread == 0)
+        rightArmTrajThread = new TrajectoryThread(rightArmIEncoders, rightArmICartesianSolver, rightArmIPositionDirect, PT_MODE_MS );
 
 
-    if (leftArmThread == 0)
-        leftArmThread = new BalanceThread(leftArmIEncoders, leftArmICartesianSolver, leftArmIPositionDirect, PT_MODE_MS );
+    if (leftArmTrajThread == 0)
+        leftArmTrajThread = new TrajectoryThread(leftArmIEncoders, leftArmICartesianSolver, leftArmIPositionDirect, PT_MODE_MS );
 
-    rightArmThread->setICartesianTrajectory(&rightArmTraj);
-    leftArmThread->setICartesianTrajectory(&leftArmTraj);
+    rightArmTrajThread->setICartesianTrajectory(&rightArmTraj);
+    leftArmTrajThread->setICartesianTrajectory(&leftArmTraj);
 
-    if (rightArmThread->isSuspended() && leftArmThread->isSuspended())
+    if (rightArmTrajThread->isSuspended() && leftArmTrajThread->isSuspended())
     {
-        rightArmThread->resetTime();
-        leftArmThread->resetTime();
-        rightArmThread->resume();
-        leftArmThread->resume();
+        rightArmTrajThread->resetTime();
+        leftArmTrajThread->resetTime();
+        rightArmTrajThread->resume();
+        leftArmTrajThread->resume();
     }
     else
     {
-        rightArmThread->start();
-        leftArmThread->start();
+        rightArmTrajThread->start();
+        leftArmTrajThread->start();
     }
 
     yarp::os::Time::delay(duration);
-    rightArmThread->suspend();
-    leftArmThread->suspend();
+    rightArmTrajThread->suspend();
+    leftArmTrajThread->suspend();
 
     return true;
 }
 
-bool BalanceTray::rotateTray(int axis, double angle, double duration, double maxvel){
+bool BalanceTray::rotateTrayByTraj(int axis, double angle, double duration, double maxvel){
 
     // first check
     if(axis<0 && axis>2){
@@ -622,6 +626,66 @@ bool BalanceTray::rotateTray(int axis, double angle, double duration, double max
     }
 
     return true;
+}
+
+bool BalanceTray::rotateTrayByP2P(int axis, double value){
+
+    // first check
+    if(axis<0 && axis>2){
+        CD_ERROR("\n");
+        return false;
+    }
+
+    std::vector<double> rx, rdx;
+    std::vector<double> lx, ldx;
+
+    if(!getRefPosition(&rx, &lx)){
+        CD_ERROR("Getting last position\n");
+        return false;
+    }
+
+    rdx = rx;
+    ldx = lx;
+
+    rdx[axis+3] = rdx[axis+3] + value;
+    ldx[axis+3] = ldx[axis+3] + value;
+
+    if(setRefPosition(rdx, ldx))
+        CD_SUCCESS("Saved reference position\n");
+
+
+    if (rightArmBalThread == 0)
+        rightArmBalThread = new BalanceThread(rightArmIEncoders, rightArmICartesianSolver, rightArmIPositionDirect, PT_MODE_MS );
+
+
+    if (leftArmBalThread == 0)
+        leftArmBalThread = new BalanceThread(leftArmIEncoders, leftArmICartesianSolver, leftArmIPositionDirect, PT_MODE_MS );
+
+
+    rightArmBalThread->setCartesianPosition(rdx);
+    leftArmBalThread->setCartesianPosition(ldx);
+
+    if(value!=0.0)
+    {
+        if (rightArmBalThread->isSuspended() && leftArmBalThread->isSuspended())
+        {
+            rightArmBalThread->resume();
+            leftArmBalThread->resume();
+        }
+        else
+        {
+            rightArmBalThread->start();
+            leftArmBalThread->start();
+        }
+    }
+    else
+    {
+        rightArmBalThread->suspend();
+        leftArmBalThread->suspend();
+    }
+
+    return true;
+
 }
 
 /************ REF POSITIONS *************************/
@@ -710,33 +774,22 @@ void BalanceTray::showFKinAA(){
 }
 
 void BalanceTray::checkRotateMovement(){
+    double value = 0.0;
 
+    while(value<0.06){
+        CD_DEBUG("value %f\n", value);
+        value+=0.0001;
+        rotateTrayByP2P(0, value);
 
-    rotateTray(0, +0.02, 2, 0.05);
-    showFKinAA();    
+    }
+    value = 0.0;
 
-    rotateTray(0, -0.04, 2, 0.05);
-    showFKinAA();
-
-
-    rotateTray(0, +0.04, 2, 0.05);
-    showFKinAA();
-
-
-    rotateTray(0, -0.04, 2, 0.05);
-    showFKinAA();
-
-
-    rotateTray(0, +0.02, 2, 0.05);
-    showFKinAA();
-
-
-    rightArmThread->stop();
-    leftArmThread->stop();
-    delete rightArmThread;
-    rightArmThread = 0;
-    delete leftArmThread;
-    leftArmThread = 0;
+    rightArmBalThread->stop();
+    leftArmBalThread->stop();
+    delete rightArmBalThread;
+    rightArmBalThread = 0;
+    delete leftArmBalThread;
+    leftArmBalThread = 0;
 }
 
 
