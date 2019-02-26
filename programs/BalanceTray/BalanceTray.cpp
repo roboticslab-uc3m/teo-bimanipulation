@@ -2,7 +2,8 @@
 
 #include "BalanceTray.hpp"
 
-#define PT_MODE_MS 50.0
+
+
 
 namespace teo
 {
@@ -30,8 +31,7 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     yarp::os::Property options;
         options.put("device","Jr3");
 
-    yarp::dev::PolyDriver jr3card(options);
-        if(!jr3card.isValid()) {
+    if(!jr3card.open(options)) {
           std::printf("Device not available.\n");
           jr3card.close();
           yarp::os::Network::fini();
@@ -245,25 +245,21 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
 
     // Start operations:
     homePosition();
-    showFKinAA();
+    printFKinAA();
     printf("Put the tray and press a Key...\n");
     getchar();    
     iAnalogSensor->calibrateSensor();
     configArmsToPositionDirect();
 
-    /*
-    reading = true;
-    rightArmBalThread = 0;
-    leftArmBalThread = 0;
+    // Initialice threads of arms
+    rightArmBalThread = new BalanceThread(rightArmIEncoders, rightArmICartesianSolver, rightArmIPositionDirect, PT_MODE_MS );
+    leftArmBalThread = new BalanceThread(leftArmIEncoders, leftArmICartesianSolver, leftArmIPositionDirect, PT_MODE_MS );
 
-    while(reading){
-        readJR3Sensor();
-    }
-    */
-    rightArmBalThread = 0;
-    leftArmBalThread = 0;
-    checkRotateMovement();
+    // start JR3 reading thread
+    this->start();
 
+    rightArmBalThread->start();
+    leftArmBalThread->start();
 
     return true;
 }
@@ -275,7 +271,6 @@ bool BalanceTray::interruptModule()
     this->stop(); // stop the thread
     rightArmDevice.close();
     leftArmDevice.close();
-    reading = false;
     return true;
 }
 
@@ -297,72 +292,33 @@ bool BalanceTray::updateModule()
 /************************************************************************/
 
 bool BalanceTray::threadInit(){
-
+    sensorValues.zero();
     return true;
 }
 
-/************************************************************************/
+/************* JR3 Thread ***********************************************/
 
 void BalanceTray::run()
 {
-    while( !Thread::isStopping() )
-    {
+    std::vector<double> rdx, ldx;
 
     // sensor reading
-
-
-
-   } // while
-}
-
-bool BalanceTray::readJR3Sensor(){
-
-    yarp::sig::Vector sensorValues;
     int ret = iAnalogSensor->read(sensorValues);
-
     if (ret == yarp::dev::IAnalogSensor::AS_OK)
     {
-        printf("4 \n");
-        printf("Left wrist: ( ");
-        for(int i=12; i<18; i++)
-            printf("%f ",sensorValues[i]);
-        printf(")\n ");
+       printJr3(sensorValues);
+       if(!calculatePoint(sensorValues, &rdx, &ldx)){
+           CD_ERROR("Calculating next point\n");
+           return;
+       }
 
-        printf("Right wrist: ( ");
-        for(int i=18; i<24; i++)
-            printf("%f ",sensorValues[i]);
-        printf(")\n ");
-
-        double distance = 0.0;
-
-        if(sensorValues[13] > +0.8){
-            CD_DEBUG("+13\n");
-            distance+=0.001;
-            rotateTrayByP2P(0, distance);
-        }
-
-        if(sensorValues[13] < -0.8){
-            CD_DEBUG("-13\n");
-            distance-=0.001;
-            rotateTrayByP2P(0, distance);
-        }
-
-        if(sensorValues[19] < -0.8){
-            CD_DEBUG("(-)19\n");
-            distance-=0.001;
-            rotateTrayByP2P(0, distance);
-        }
-
-        if(sensorValues[19] > +0.8){
-            CD_DEBUG("(+)19\n");
-            distance+=0.001;
-            rotateTrayByP2P(0, distance);
-        }
+       rightArmBalThread->setCartesianPosition(rdx);
+       leftArmBalThread->setCartesianPosition(ldx);
     }
     else CD_ERROR("Reading JR3\n");
-    yarp::os::Time::delay(0.01);
 }
 
+/************************************************************************/
 
 bool BalanceTray::getRightArmFwdKin(std::vector<double> *currentX)
 {
@@ -628,80 +584,60 @@ bool BalanceTray::rotateTrayByTraj(int axis, double angle, double duration, doub
     return true;
 }
 
-bool BalanceTray::rotateTrayByP2P(int axis, double value){
-
-    // first check
-    if(axis<0 && axis>2){
-        CD_ERROR("\n");
-        return false;
-    }
-
-    std::vector<double> rx, rdx;
-    std::vector<double> lx, ldx;
+bool BalanceTray::calculatePoint(yarp::sig::Vector sensor, std::vector<double> *rdx, std::vector<double> *ldx)
+{
+    double increment;
+    std::vector<double> rx, rdsx; // right current point, right destination point
+    std::vector<double> lx, ldsx; // left current point, left destination point
 
     if(!getRefPosition(&rx, &lx)){
         CD_ERROR("Getting last position\n");
         return false;
     }
 
-    rdx = rx;
-    ldx = lx;
-
-    rdx[axis+3] = rdx[axis+3] + value;
-    ldx[axis+3] = ldx[axis+3] + value;
-
-    if(setRefPosition(rdx, ldx))
-        CD_SUCCESS("Saved reference position\n");
-
-
-    if (rightArmBalThread == 0)
-        rightArmBalThread = new BalanceThread(rightArmIEncoders, rightArmICartesianSolver, rightArmIPositionDirect, PT_MODE_MS );
-
-
-    if (leftArmBalThread == 0)
-        leftArmBalThread = new BalanceThread(leftArmIEncoders, leftArmICartesianSolver, leftArmIPositionDirect, PT_MODE_MS );
-
-
-    rightArmBalThread->setCartesianPosition(rdx);
-    leftArmBalThread->setCartesianPosition(ldx);
-
-    if(value!=0.0)
-    {
-        if (rightArmBalThread->isSuspended() && leftArmBalThread->isSuspended())
-        {
-            rightArmBalThread->resume();
-            leftArmBalThread->resume();
-        }
-        else
-        {
-            rightArmBalThread->start();
-            leftArmBalThread->start();
-        }
+    // calculating position increment
+    if(sensor[13] < -0.8){
+        CD_DEBUG("(+)13\n");
+        increment-=0.001;
     }
-    else
-    {
-        rightArmBalThread->suspend();
-        leftArmBalThread->suspend();
+
+    if(sensor[13] > +0.8){
+        CD_DEBUG("(-)13\n");
+        increment+=0.001;
     }
+
+    if(sensor[19] < -0.8){
+        CD_DEBUG("(-)19\n");
+        increment-=0.001;
+    }
+
+    if(sensor[19] > +0.8){
+        CD_DEBUG("(+)19\n");
+        increment+=0.001;
+    }
+
+    // copy current to destination
+    rdsx = rx;
+    ldsx = lx;
+
+    // increment rotation value in X axis
+    rdsx[3] = rdsx[3] + increment;
+    ldsx[3] = ldsx[3] + increment;
+
+    if(!setRefPosition(rdsx, ldsx)){
+        CD_ERROR("Saving reference position\n");
+        return false;
+    }
+
+    // send to the pointer
+    *rdx = rdsx;
+    *ldx = rdsx;
 
     return true;
-
 }
+
 
 /************ REF POSITIONS *************************/
-
-bool BalanceTray::setRefPosition(std::vector<double> rx, std::vector<double> lx){;
-    rightArmRefpos = rx;
-    leftArmRefpos = lx;
-    return true;
-}
-
-bool BalanceTray::getRefPosition(std::vector<double> *rx, std::vector<double> *lx){;
-    *rx = rightArmRefpos;
-    *lx = leftArmRefpos;
-    CD_SUCCESS("Got reference position\n");
-    return true;
-}
 
 bool BalanceTray::homePosition(){
     // Prepare the last position        
@@ -731,9 +667,22 @@ bool BalanceTray::homePosition(){
         return true;
 }
 
-/************ SHOWING FK ****************************/
+bool BalanceTray::getRefPosition(std::vector<double> *rx, std::vector<double> *lx){;
+    *rx = rightArmRefpos;
+    *lx = leftArmRefpos;
+    CD_SUCCESS("Got reference position\n");
+    return true;
+}
 
-void BalanceTray::showFKinAAS(){
+bool BalanceTray::setRefPosition(std::vector<double> rx, std::vector<double> lx){;
+    rightArmRefpos = rx;
+    leftArmRefpos = lx;
+    return true;
+}
+
+/************ SHOWING DIFFERENT VALUES *******************/
+
+void BalanceTray::printFKinAAS(){
     printf("R-arm pose : [");
     std::vector<double> rightArmPoint(6);
     if(! getRightArmFwdKin(&rightArmPoint))
@@ -751,7 +700,7 @@ void BalanceTray::showFKinAAS(){
     printf("]\n ");
 }
 
-void BalanceTray::showFKinAA(){
+void BalanceTray::printFKinAA(){
     std::vector<double> rightArmPoint(6);
     if(! getRightArmFwdKin(&rightArmPoint))
         CD_ERROR("Doing Forward Kinematic of right-arm...\n");
@@ -773,24 +722,19 @@ void BalanceTray::showFKinAA(){
     printf("]\n ");
 }
 
-void BalanceTray::checkRotateMovement(){
-    double value = 0.0;
+void BalanceTray::printJr3(yarp::sig::Vector values)
+{
+    CD_INFO_NO_HEADER("R: ( ");
+    for(int i=12; i<18; i++)
+        CD_INFO_NO_HEADER("%f ",values[i]);
+    CD_INFO_NO_HEADER(")\n ");
 
-    while(value<0.06){
-        CD_DEBUG("value %f\n", value);
-        value+=0.0001;
-        rotateTrayByP2P(0, value);
-
-    }
-    value = 0.0;
-
-    rightArmBalThread->stop();
-    leftArmBalThread->stop();
-    delete rightArmBalThread;
-    rightArmBalThread = 0;
-    delete leftArmBalThread;
-    leftArmBalThread = 0;
+    CD_INFO_NO_HEADER("L: ( ");
+    for(int i=18; i<24; i++)
+        CD_INFO_NO_HEADER("%f ",values[i]);
+    CD_INFO_NO_HEADER(")\n ");
 }
+
 
 
 

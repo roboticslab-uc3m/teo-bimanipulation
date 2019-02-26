@@ -11,9 +11,12 @@
 
 #include "TrajectoryThread.hpp"
 #include "BalanceThread.hpp"
+#include <yarp/os/Semaphore.h>
 
 
-#define DEFAULT_ROBOT "/teoSim" // teo or teoSim
+#define DEFAULT_ROBOT "/teo" // teo or teoSim
+#define PT_MODE_MS 50.0
+#define JR3_READING_MS 50.0
 
 using namespace yarp::os;
 using namespace roboticslab;
@@ -27,10 +30,12 @@ namespace teo
  * @brief Balance Tray Core.
  *
  */
-   class BalanceTray : public yarp::os::RFModule, public yarp::os::Thread
-    {
+   class BalanceTray : public yarp::os::RFModule, public yarp::os::RateThread
+    {        
         public:
-             virtual bool configure(yarp::os::ResourceFinder &rf);
+        BalanceTray() :  yarp::os::RateThread(JR3_READING_MS) {} // constructor
+        virtual bool configure(yarp::os::ResourceFinder &rf);
+
         private:
 
             /** RFModule interruptModule. */
@@ -91,9 +96,9 @@ namespace teo
             bool getLeftArmFwdKin(std::vector<double> *currentX);
 
             /** JR3 device **/
+            yarp::dev::PolyDriver jr3card;
             yarp::dev::IAnalogSensor *iAnalogSensor;
-            bool reading;
-            bool readJR3Sensor();
+            yarp::sig::Vector sensorValues;
 
             /** Reference position functions **/
             std::vector<double> rightArmRefpos;
@@ -119,16 +124,18 @@ namespace teo
 
             /** Moving the tray **/
             bool moveTrayLinearly(int axis, double dist, double duration, double maxvel);
-            bool rotateTrayByTraj(int axis, double angle, double duration, double maxvel);
-            bool rotateTrayByP2P(int axis, double value);
+            bool rotateTrayByTraj(int axis, double angle, double duration, double maxvel); 
+
+            /** calculate next point **/
+            bool calculatePoint(yarp::sig::Vector sensor, std::vector<double> *rdx, std::vector<double> *ldx);
 
             /** Check movements functions */
             void checkLinearlyMovement();
-            void checkRotateMovement();
 
             /** Show information **/
-            void showFKinAAS();
-            void showFKinAA();
+            void printFKinAAS();
+            void printFKinAA();
+            void printJr3(yarp::sig::Vector values);
 
             /** movement finished */
             bool done;
