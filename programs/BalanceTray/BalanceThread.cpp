@@ -16,21 +16,8 @@ bool BalanceThread::threadInit()
 
 void BalanceThread::run()
 {
-    std::vector<double> position, positionInAA;
-
+    std::vector<double> position;
     getCartesianPosition(&position);
-    KinRepresentation::decodePose(position, positionInAA, KinRepresentation::CARTESIAN, KinRepresentation::AXIS_ANGLE, KinRepresentation::DEGREES );
-
-    CD_DEBUG_NO_HEADER("POSS: [");
-    for(int i=0; i<positionInAA.size(); i++){
-        CD_DEBUG_NO_HEADER("%f ",positionInAA[i]);
-    }
-    CD_DEBUG_NO_HEADER("]\n ");
-
-    if(positionInAA[6]>5){
-        CD_WARNING("Turnning STOP (> 5º)!!\n");
-        return;
-    }
 
     std::vector<double> currentQ(axes);
     if ( ! iEncoders->getEncoders( currentQ.data() ) ){

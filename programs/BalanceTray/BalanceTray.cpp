@@ -244,12 +244,27 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     leftArmICartesianSolver->appendLink(twist_left_N_T);
 
     // Start operations:
-    homePosition();
+    if(homePosition())
+        CD_SUCCESS("Home position [OK]\n");
+
     printFKinAA();
-    printf("Put the tray and press a Key...\n");
-    getchar();    
-    iAnalogSensor->calibrateSensor();
-    configArmsToPositionDirect();
+
+    CD_INFO_NO_HEADER("Put the tray and press a Key...\n");
+    getchar();
+
+    int ret = iAnalogSensor->calibrateSensor();
+    if(ret!=0){
+        CD_ERROR("Calibrating sensors...\n");
+        return false;
+    }
+    else CD_SUCCESS("JR3 sensors calibrated\n");
+
+    if(configArmsToPositionDirect())
+        CD_SUCCESS("Configured to Position Direct\n");
+    else {
+        CD_ERROR("Congiguring drivers to Position Direct\n");
+        return false;
+    }
 
     // Initialice threads of arms
     rightArmBalThread = new BalanceThread(rightArmIEncoders, rightArmICartesianSolver, rightArmIPositionDirect, PT_MODE_MS );
@@ -258,6 +273,7 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     // start JR3 reading thread
     this->start();
 
+    // start
     rightArmBalThread->start();
     leftArmBalThread->start();
 
@@ -307,7 +323,7 @@ void BalanceTray::run()
     if (ret == yarp::dev::IAnalogSensor::AS_OK)
     {
        printJr3(sensorValues);
-       if(!calculatePoint(sensorValues, &rdx, &ldx)){
+       if(!calculatePointFollowingForce(sensorValues, &rdx, &ldx)){
            CD_ERROR("Calculating next point\n");
            return;
        }
@@ -437,8 +453,7 @@ bool BalanceTray::configArmsToPositionDirect(){
         if(! leftArmIControlMode2->setControlModes(leftArmControlModes.data())){
             CD_ERROR("Problems setting POSITION DIRECT mode of: left-arm\n");
             return false;
-        }
-        CD_SUCCESS("Configured to Position Direct\n");
+        }        
         return true;
 }
 
@@ -584,9 +599,10 @@ bool BalanceTray::rotateTrayByTraj(int axis, double angle, double duration, doub
     return true;
 }
 
-bool BalanceTray::calculatePoint(yarp::sig::Vector sensor, std::vector<double> *rdx, std::vector<double> *ldx)
+bool BalanceTray::calculatePointFollowingForce(yarp::sig::Vector sensor, std::vector<double> *rdx, std::vector<double> *ldx)
 {
-    double increment;
+    char plane ='0';
+    double increment;    
     std::vector<double> rx, rdsx; // right current point, right destination point
     std::vector<double> lx, ldsx; // left current point, left destination point
 
@@ -596,33 +612,112 @@ bool BalanceTray::calculatePoint(yarp::sig::Vector sensor, std::vector<double> *
     }
 
     // calculating position increment
-    if(sensor[13] < -0.8){
-        CD_DEBUG("(+)13\n");
-        increment-=0.001;
-    }
-
+    // -- Turning X axis
     if(sensor[13] > +0.8){
-        CD_DEBUG("(-)13\n");
+        CD_DEBUG("(+)X\n");
         increment+=0.001;
+        plane = 'x';
     }
+    /*
+    if(sensor[13] < -0.8){
+        CD_DEBUG("(-)X\n");
+        increment-=0.001;
+        plane = 'x';
+    }
+    */
 
     if(sensor[19] < -0.8){
-        CD_DEBUG("(-)19\n");
+        CD_DEBUG("(-)X\n");
         increment-=0.001;
+        plane = 'x';
     }
 
+    /*
     if(sensor[19] > +0.8){
         CD_DEBUG("(+)19\n");
         increment+=0.001;
+        plane = 'x';
+    }
+    */
+
+    // -- Turning Y axis
+    if((sensor[17] < -0.8) || (sensor[23] > +0.8))
+    {
+        CD_DEBUG("(-)17 || (-)23\n");
+        increment-=0.001;
+        plane = 'y';
+
+    }
+
+    if((sensor[17] > +0.8) || (sensor[23] < -0.8))
+    {
+        CD_DEBUG("(+)17 || (+)23\n");
+        increment+=0.001;
+        plane = 'y';
+
+    }
+
+    // -- Turning Z axis
+    if(sensor[12] < -0.8 && sensor[18] > +0.8 ){
+        CD_DEBUG("+ Y");
+        increment+=0.001;
+        plane = 'z';
+    }
+
+    if(sensor[12] > +0.8 && sensor[18] < -0.8 ){
+        CD_DEBUG("+ Y");
+        increment-=0.001;
+        plane = 'z';
     }
 
     // copy current to destination
     rdsx = rx;
     ldsx = lx;
 
-    // increment rotation value in X axis
-    rdsx[3] = rdsx[3] + increment;
-    ldsx[3] = ldsx[3] + increment;
+    switch (plane) {
+        case 'x':
+            // increment rotation value in X axis
+            rdsx[3] = rdsx[3] + increment;
+            ldsx[3] = ldsx[3] + increment;
+            break;
+        case 'y':
+            // increment rotation value in Y axis
+            rdsx[4] = rdsx[4] + increment;
+            ldsx[4] = ldsx[4] + increment;
+            break;
+        case 'z':
+            // increment rotation value in Y axis
+            rdsx[5] = rdsx[5] + increment;
+            ldsx[5] = ldsx[5] + increment;
+            break;
+        case '0':
+            CD_INFO_NO_HEADER("Repose position\n");
+            break;
+    }
+
+    // transformation: Axis Angle Scaled -> Axis Angle
+    std::vector<double> rdsxaa, ldsxaa;
+    KinRepresentation::decodePose(rdsx, rdsxaa, KinRepresentation::CARTESIAN, KinRepresentation::AXIS_ANGLE, KinRepresentation::DEGREES );
+    KinRepresentation::decodePose(ldsx, ldsxaa, KinRepresentation::CARTESIAN, KinRepresentation::AXIS_ANGLE, KinRepresentation::DEGREES );
+
+    // Checks the joint limits!
+    CD_DEBUG_NO_HEADER("R-POSS: [");
+    for(int i=0; i<rdsxaa.size(); i++){
+        CD_DEBUG_NO_HEADER("%f ",rdsxaa[i]);
+    }
+    CD_DEBUG_NO_HEADER("]\n ");
+
+    CD_DEBUG_NO_HEADER("L-POSS: [");
+    for(int i=0; i<ldsxaa.size(); i++){
+        CD_DEBUG_NO_HEADER("%f ",ldsxaa[i]);
+    }
+    CD_DEBUG_NO_HEADER("]\n ");
+
+    if(rdsxaa[6]>6 || ldsxaa[6]>6){
+        CD_WARNING("Turning STOP (> 6º)!!\n");
+        return false;
+    }
+
 
     if(!setRefPosition(rdsx, ldsx)){
         CD_ERROR("Saving reference position\n");
@@ -631,7 +726,7 @@ bool BalanceTray::calculatePoint(yarp::sig::Vector sensor, std::vector<double> *
 
     // send to the pointer
     *rdx = rdsx;
-    *ldx = rdsx;
+    *ldx = ldsx;
 
     return true;
 }
@@ -660,23 +755,38 @@ bool BalanceTray::homePosition(){
         if(! getLeftArmFwdKin(&leftArmFK))
             CD_ERROR("Doing Forward Kinematic of left-arm...\n");
 
+        if(setHomePosition(rightArmFK, leftArmFK))
+            CD_SUCCESS("Home position saved\n");
+
         if(setRefPosition(rightArmFK, leftArmFK))
             CD_SUCCESS("Reference position saved\n");
 
-        CD_SUCCESS("Home position [OK]\n");
         return true;
 }
 
-bool BalanceTray::getRefPosition(std::vector<double> *rx, std::vector<double> *lx){;
-    *rx = rightArmRefpos;
-    *lx = leftArmRefpos;
-    CD_SUCCESS("Got reference position\n");
+bool BalanceTray::setHomePosition(std::vector<double> rx, std::vector<double> lx){
+    rightArmHomepos = rx;
+    leftArmHomepos = lx;
+    return true;
+}
+
+bool BalanceTray::getHomePosition(std::vector<double> *rx, std::vector<double> *lx){;
+    *rx = rightArmHomepos;
+    *lx = leftArmHomepos;
+    CD_SUCCESS("Got home position\n");
     return true;
 }
 
 bool BalanceTray::setRefPosition(std::vector<double> rx, std::vector<double> lx){;
     rightArmRefpos = rx;
     leftArmRefpos = lx;
+    return true;
+}
+
+bool BalanceTray::getRefPosition(std::vector<double> *rx, std::vector<double> *lx){;
+    *rx = rightArmRefpos;
+    *lx = leftArmRefpos;
+    CD_SUCCESS("Got reference position\n");
     return true;
 }
 
@@ -734,9 +844,6 @@ void BalanceTray::printJr3(yarp::sig::Vector values)
         CD_INFO_NO_HEADER("%f ",values[i]);
     CD_INFO_NO_HEADER(")\n ");
 }
-
-
-
 
 }  // namespace teo
 

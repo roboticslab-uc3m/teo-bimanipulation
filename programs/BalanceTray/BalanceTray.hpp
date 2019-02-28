@@ -16,7 +16,7 @@
 
 #define DEFAULT_ROBOT "/teo" // teo or teoSim
 #define PT_MODE_MS 50.0
-#define JR3_READING_MS 50.0
+#define JR3_READING_MS 20.0
 
 using namespace yarp::os;
 using namespace roboticslab;
@@ -102,9 +102,14 @@ namespace teo
 
             /** Reference position functions **/
             std::vector<double> rightArmRefpos;
-            std::vector<double>  leftArmRefpos;
+            std::vector<double>  leftArmRefpos;            
             bool setRefPosition(std::vector<double> rx, std::vector<double> lx);
             bool getRefPosition(std::vector<double> *rx, std::vector<double> *lx);
+            std::vector<double> rightArmHomepos;
+            std::vector<double>  leftArmHomepos;
+            bool homePosition(); // initial pos
+            bool setHomePosition(std::vector<double> rx, std::vector<double> lx);
+            bool getHomePosition(std::vector<double> *rx, std::vector<double> *lx);
 
             /****** FUNCTIONS ******/            
 
@@ -119,15 +124,14 @@ namespace teo
             bool moveJointsInPosition(std::vector<double> &rightArm, std::vector<double>& leftArm);
             bool moveJointsInPositionDirect(std::vector<double> &rightArm, std::vector<double> &leftArm);
 
-            /** Modes to move the tray **/
-            bool homePosition(); // initial pos
 
             /** Moving the tray **/
             bool moveTrayLinearly(int axis, double dist, double duration, double maxvel);
             bool rotateTrayByTraj(int axis, double angle, double duration, double maxvel); 
 
             /** calculate next point **/
-            bool calculatePoint(yarp::sig::Vector sensor, std::vector<double> *rdx, std::vector<double> *ldx);
+            bool calculatePointFollowingForce(yarp::sig::Vector sensor, std::vector<double> *rdx, std::vector<double> *ldx);
+            bool calculatePointOpposeForce(yarp::sig::Vector sensor, std::vector<double> *rdx, std::vector<double> *ldx);
 
             /** Check movements functions */
             void checkLinearlyMovement();
