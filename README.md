@@ -2,7 +2,7 @@
 Demostration of Teo manipulating a tray with two arms (Press image to see a [video](https://youtu.be/Cdr-XTdyZNA) about the state of development)
  
  
- [![IMAGE ALT TEXT](http://i3.ytimg.com/vi/X3zJ8DxNW7I/maxresdefault.jpg)](https://www.youtube.com/watch?v=X3zJ8DxNW7I "TEO-Bimanipulation robot demo: a humanoid robot manipulating a tray")
+ [![IMAGE ALT TEXT](http://i3.ytimg.com/vi/X3zJ8DxNW7I/maxresdefault.jpg)](https://www.youtube.com/watch?v=Cdr-XTdyZNA "TEO-Bimanipulation robot demo: a humanoid robot manipulating a tray")
  
 ## Contributing
 
