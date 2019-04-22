@@ -125,13 +125,12 @@ namespace teo
             bool moveJointsInPositionDirect(std::vector<double> &rightArm, std::vector<double> &leftArm);
 
 
-            /** Moving the tray **/
-            bool moveTrayLinearly(int axis, double dist, double duration, double maxvel);
-            bool rotateTrayByTraj(int axis, double angle, double duration, double maxvel); 
+            /** Moving the tray calculating a trajectory **/
+            bool rotateTrayByTrajectory(int axis, double angle, double duration, double maxvel);
 
-            /** calculate next point **/
+            /** calculate next point in relation to the forces read by the sensor **/
             bool calculatePointFollowingForce(yarp::sig::Vector sensor, std::vector<double> *rdx, std::vector<double> *ldx);
-            bool calculatePointOpposeForce(yarp::sig::Vector sensor, std::vector<double> *rdx, std::vector<double> *ldx);
+            bool calculatePointOpposingForce(yarp::sig::Vector sensor, std::vector<double> *rdx, std::vector<double> *ldx);
 
             /** Check movements functions */
             void checkLinearlyMovement();

@@ -2,9 +2,6 @@
 
 #include "BalanceTray.hpp"
 
-
-
-
 namespace teo
 {
 
@@ -312,7 +309,7 @@ bool BalanceTray::threadInit(){
     return true;
 }
 
-/************* JR3 Thread ***********************************************/
+/**************** JR3 Thread *************************/
 
 void BalanceTray::run()
 {
@@ -334,7 +331,7 @@ void BalanceTray::run()
     else CD_ERROR("Reading JR3\n");
 }
 
-/************************************************************************/
+/****************************************************/
 
 bool BalanceTray::getRightArmFwdKin(std::vector<double> *currentX)
 {
@@ -373,7 +370,7 @@ bool BalanceTray::getLeftArmFwdKin(std::vector<double> *currentX)
     return true;
 }
 
-/***************** CONFIGURATION MODES FOR DEVICES *********************/
+/************ CONFIGURATION MODES FOR DEVICES *******/
 
 bool BalanceTray::configArmsToPosition(double sp, double acc){
 
@@ -566,7 +563,7 @@ bool BalanceTray::executeTrajectory(std::vector<double> rx, std::vector<double> 
     return true;
 }
 
-bool BalanceTray::rotateTrayByTraj(int axis, double angle, double duration, double maxvel){
+bool BalanceTray::rotateTrayByTrajectory(int axis, double angle, double duration, double maxvel){
 
     // first check
     if(axis<0 && axis>2){
@@ -614,7 +611,7 @@ bool BalanceTray::calculatePointFollowingForce(yarp::sig::Vector sensor, std::ve
     // calculating position increment
     // -- Turning X axis
     if(sensor[13] > +0.8){
-        CD_DEBUG("(+)X\n");
+        CD_DEBUG_NO_HEADER("Turning (+)X\n");
         increment+=0.001;
         plane = 'x';
     }
@@ -627,7 +624,7 @@ bool BalanceTray::calculatePointFollowingForce(yarp::sig::Vector sensor, std::ve
     */
 
     if(sensor[19] < -0.8){
-        CD_DEBUG("(-)X\n");
+        CD_DEBUG_NO_HEADER("(-)X\n");
         increment-=0.001;
         plane = 'x';
     }
@@ -643,7 +640,7 @@ bool BalanceTray::calculatePointFollowingForce(yarp::sig::Vector sensor, std::ve
     // -- Turning Y axis
     if((sensor[17] < -0.8) || (sensor[23] > +0.8))
     {
-        CD_DEBUG("(-)17 || (-)23\n");
+        CD_DEBUG_NO_HEADER("(-)17 || (-)23\n");
         increment-=0.001;
         plane = 'y';
 
@@ -651,7 +648,7 @@ bool BalanceTray::calculatePointFollowingForce(yarp::sig::Vector sensor, std::ve
 
     if((sensor[17] > +0.8) || (sensor[23] < -0.8))
     {
-        CD_DEBUG("(+)17 || (+)23\n");
+        CD_DEBUG_NO_HEADER("(+)17 || (+)23\n");
         increment+=0.001;
         plane = 'y';
 
@@ -659,13 +656,13 @@ bool BalanceTray::calculatePointFollowingForce(yarp::sig::Vector sensor, std::ve
 
     // -- Turning Z axis
     if(sensor[12] < -0.8 && sensor[18] > +0.8 ){
-        CD_DEBUG("+ Y");
+        CD_DEBUG_NO_HEADER("+ Y\n");
         increment+=0.001;
         plane = 'z';
     }
 
     if(sensor[12] > +0.8 && sensor[18] < -0.8 ){
-        CD_DEBUG("+ Y");
+        CD_DEBUG_NO_HEADER("+ Y\n");
         increment-=0.001;
         plane = 'z';
     }
@@ -691,7 +688,7 @@ bool BalanceTray::calculatePointFollowingForce(yarp::sig::Vector sensor, std::ve
             ldsx[5] = ldsx[5] + increment;
             break;
         case '0':
-            CD_INFO_NO_HEADER("Repose position\n");
+            CD_INFO("Repose position\n");
             break;
     }
 
@@ -705,16 +702,16 @@ bool BalanceTray::calculatePointFollowingForce(yarp::sig::Vector sensor, std::ve
     for(int i=0; i<rdsxaa.size(); i++){
         CD_DEBUG_NO_HEADER("%f ",rdsxaa[i]);
     }
-    CD_DEBUG_NO_HEADER("]\n ");
+    CD_DEBUG_NO_HEADER("]\n");
 
     CD_DEBUG_NO_HEADER("L-POSS: [");
     for(int i=0; i<ldsxaa.size(); i++){
         CD_DEBUG_NO_HEADER("%f ",ldsxaa[i]);
     }
-    CD_DEBUG_NO_HEADER("]\n ");
+    CD_DEBUG_NO_HEADER("]\n");
 
-    if(rdsxaa[6]>6 || ldsxaa[6]>6){
-        CD_WARNING("Turning STOP (> 6º)!!\n");
+    if(/*rdsxaa[6]>5 || */ldsxaa[6]>5){
+        CD_WARNING("Turning STOP (> 5º)!!\n");
         return false;
     }
 
@@ -737,7 +734,7 @@ bool BalanceTray::calculatePointFollowingForce(yarp::sig::Vector sensor, std::ve
 bool BalanceTray::homePosition(){
     // Prepare the last position        
         CD_INFO("Preparing position...\n");
-        configArmsToPosition(25,25);
+        configArmsToPosition(10,10);
         double rightArmPoss[7] = { 30.0, -25.5, -28.6,  78.7, -57.5,  70.6};
         double leftArmPoss[7]  = {-30.0,  25.5,  28.6, -78.7,  57.5, -70.6};
         std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+7); //teoSim (+6) teo (+7)
@@ -799,7 +796,7 @@ void BalanceTray::printFKinAAS(){
         CD_ERROR("Doing Forward Kinematic of right-arm...\n");
     for(int i=0; i<rightArmPoint.size(); i++)
         printf("%f ",rightArmPoint[i]);
-    printf("]\n ");
+    printf("]\n");
 
     printf("L-arm pose: [");
     std::vector<double> leftArmPoint(6);
@@ -807,7 +804,7 @@ void BalanceTray::printFKinAAS(){
         CD_ERROR("Doing Forward Kinematic of left-arm...\n");
     for(int i=0; i<leftArmPoint.size(); i++)
         printf("%f ",leftArmPoint[i]);
-    printf("]\n ");
+    printf("]\n");
 }
 
 void BalanceTray::printFKinAA(){
@@ -819,7 +816,7 @@ void BalanceTray::printFKinAA(){
     printf("R-arm pose: [");
     for(int i=0; i<rightArmPointInAxisAngle.size(); i++)
         printf("%f ",rightArmPointInAxisAngle[i]);
-    printf("]\n ");
+    printf("]\n");
 
     std::vector<double> leftArmPoint(6);
     if(! getLeftArmFwdKin(&leftArmPoint))
@@ -829,7 +826,7 @@ void BalanceTray::printFKinAA(){
     printf("L-arm pose: [");
     for(int i=0; i<leftArmPointInAxisAngle.size(); i++)
         printf("%f ",leftArmPointInAxisAngle[i]);
-    printf("]\n ");
+    printf("]\n");
 }
 
 void BalanceTray::printJr3(yarp::sig::Vector values)
@@ -837,12 +834,12 @@ void BalanceTray::printJr3(yarp::sig::Vector values)
     CD_INFO_NO_HEADER("R: ( ");
     for(int i=12; i<18; i++)
         CD_INFO_NO_HEADER("%f ",values[i]);
-    CD_INFO_NO_HEADER(")\n ");
+    CD_INFO_NO_HEADER(")\n");
 
     CD_INFO_NO_HEADER("L: ( ");
     for(int i=18; i<24; i++)
         CD_INFO_NO_HEADER("%f ",values[i]);
-    CD_INFO_NO_HEADER(")\n ");
+    CD_INFO_NO_HEADER(")\n");
 }
 
 }  // namespace teo
