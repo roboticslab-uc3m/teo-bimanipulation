@@ -1,16 +1,22 @@
 // -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*-
-#include <string>
+
 #include <yarp/os/all.h>
 #include <yarp/dev/all.h>
+#include <yarp/dev/IAnalogSensor.h>
 #include "ColorDebug.h"
 #include "ICartesianSolver.h"
-#include "KinematicRepresentation.hpp"
-#include <KdlTrajectory.hpp>
 #include <ICartesianTrajectory.hpp>
+#include <KdlTrajectory.hpp>
+#include "KinematicRepresentation.hpp"
+
+#include "TrajectoryThread.hpp"
 #include "BalanceThread.hpp"
+#include <yarp/os/Semaphore.h>
 
 
 #define DEFAULT_ROBOT "/teo" // teo or teoSim
+#define PT_MODE_MS 50.0
+#define JR3_READING_MS 20.0
 
 using namespace yarp::os;
 using namespace roboticslab;
@@ -24,10 +30,12 @@ namespace teo
  * @brief Balance Tray Core.
  *
  */
-   class BalanceTray : public yarp::os::RFModule, public yarp::os::Thread
-    {
+   class BalanceTray : public yarp::os::RFModule, public yarp::os::RateThread
+    {        
         public:
-             virtual bool configure(yarp::os::ResourceFinder &rf);
+        BalanceTray() :  yarp::os::RateThread(JR3_READING_MS) {} // constructor
+        virtual bool configure(yarp::os::ResourceFinder &rf);
+
         private:
 
             /** RFModule interruptModule. */
@@ -55,6 +63,10 @@ namespace teo
             /** Solver device **/
             yarp::dev::PolyDriver rightArmSolverDevice;
             ICartesianSolver *rightArmICartesianSolver;
+            /** Thread of right-arm KDL trajectory generator **/
+            TrajectoryThread *rightArmTrajThread;
+            /** Thread of right-arm Point2Point movement **/
+            BalanceThread *rightArmBalThread;
             /** Forward Kinematic function **/
             bool getRightArmFwdKin(std::vector<double> *currentX);
 
@@ -76,18 +88,28 @@ namespace teo
             /** Solver device **/
             yarp::dev::PolyDriver leftArmSolverDevice;
             ICartesianSolver *leftArmICartesianSolver;
+            /** Thread of left-arm KDL trajectory generator **/
+            TrajectoryThread *leftArmTrajThread;
+            /** Thread of left-arm Point2Point movement **/
+            BalanceThread *leftArmBalThread;
             /** Forward Kinematic function **/
             bool getLeftArmFwdKin(std::vector<double> *currentX);
 
-            BalanceThread * rightArmThread;
-            BalanceThread * leftArmThread;
+            /** JR3 device **/
+            yarp::dev::PolyDriver jr3card;
+            yarp::dev::IAnalogSensor *iAnalogSensor;
+            yarp::sig::Vector sensorValues;
 
             /** Reference position functions **/
             std::vector<double> rightArmRefpos;
-            std::vector<double>  leftArmRefpos;
+            std::vector<double>  leftArmRefpos;            
             bool setRefPosition(std::vector<double> rx, std::vector<double> lx);
             bool getRefPosition(std::vector<double> *rx, std::vector<double> *lx);
-            bool goToRefPosition(double duration, double maxvel);
+            std::vector<double> rightArmHomepos;
+            std::vector<double>  leftArmHomepos;
+            bool homePosition(); // initial pos
+            bool setHomePosition(std::vector<double> rx, std::vector<double> lx);
+            bool getHomePosition(std::vector<double> *rx, std::vector<double> *lx);
 
             /****** FUNCTIONS ******/            
 
@@ -102,20 +124,21 @@ namespace teo
             bool moveJointsInPosition(std::vector<double> &rightArm, std::vector<double>& leftArm);
             bool moveJointsInPositionDirect(std::vector<double> &rightArm, std::vector<double> &leftArm);
 
-            /** Modes to move the tray **/
-            bool homePosition(); // initial pos
 
-            /** Moving the tray **/
-            bool moveTrayLinearly(int axis, double dist, double duration, double maxvel);
-            bool rotateTray(int axis, double angle, double duration, double maxvel);
+            /** Moving the tray calculating a trajectory **/
+            bool rotateTrayByTrajectory(int axis, double angle, double duration, double maxvel);
+
+            /** calculate next point in relation to the forces read by the sensor **/
+            bool calculatePointFollowingForce(yarp::sig::Vector sensor, std::vector<double> *rdx, std::vector<double> *ldx);
+            bool calculatePointOpposingForce(yarp::sig::Vector sensor, std::vector<double> *rdx, std::vector<double> *ldx);
 
             /** Check movements functions */
             void checkLinearlyMovement();
-            void checkRotateMovement();
 
             /** Show information **/
-            void showFKinAAS();
-            void showFKinAA();
+            void printFKinAAS();
+            void printFKinAA();
+            void printJr3(yarp::sig::Vector values);
 
             /** movement finished */
             bool done;
@@ -124,6 +147,7 @@ namespace teo
             yarp::os::RpcServer inDialogPort;
 
             /** Thread run */
+            virtual bool threadInit();
             virtual void run();
 
 

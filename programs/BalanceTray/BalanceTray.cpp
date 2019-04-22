@@ -2,8 +2,6 @@
 
 #include "BalanceTray.hpp"
 
-#define PT_MODE_MS 50.0
-
 namespace teo
 {
 
@@ -24,6 +22,25 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     }
 
     std::string balanceTrayStr("/balanceTray");
+
+    // ------ ANALOG SENSOR ------
+
+    yarp::os::Property options;
+        options.put("device","Jr3");
+
+    if(!jr3card.open(options)) {
+          std::printf("Device not available.\n");
+          jr3card.close();
+          yarp::os::Network::fini();
+          return 1;
+    }
+
+    if ( ! jr3card.view(iAnalogSensor) )
+        {
+            CD_ERROR("Problems acquiring JR3 interface\n");
+            return 1;
+        }
+    CD_SUCCESS("Acquired JR3 interface\n");
 
     // ------ RIGHT ARM -------
 
@@ -223,13 +240,39 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     rightArmICartesianSolver->appendLink(twist_right_N_T);
     leftArmICartesianSolver->appendLink(twist_left_N_T);
 
-    //Start operations:
-    homePosition();
-    showFKinAA();
-    printf("Put the tray and press a Key...\n");
+    // Start operations:
+    if(homePosition())
+        CD_SUCCESS("Home position [OK]\n");
+
+    printFKinAA();
+
+    CD_INFO_NO_HEADER("Put the tray and press a Key...\n");
     getchar();
-    configArmsToPositionDirect();    
-    checkRotateMovement();
+
+    int ret = iAnalogSensor->calibrateSensor();
+    if(ret!=0){
+        CD_ERROR("Calibrating sensors...\n");
+        return false;
+    }
+    else CD_SUCCESS("JR3 sensors calibrated\n");
+
+    if(configArmsToPositionDirect())
+        CD_SUCCESS("Configured to Position Direct\n");
+    else {
+        CD_ERROR("Congiguring drivers to Position Direct\n");
+        return false;
+    }
+
+    // Initialice threads of arms
+    rightArmBalThread = new BalanceThread(rightArmIEncoders, rightArmICartesianSolver, rightArmIPositionDirect, PT_MODE_MS );
+    leftArmBalThread = new BalanceThread(leftArmIEncoders, leftArmICartesianSolver, leftArmIPositionDirect, PT_MODE_MS );
+
+    // start JR3 reading thread
+    this->start();
+
+    // start
+    rightArmBalThread->start();
+    leftArmBalThread->start();
 
     return true;
 }
@@ -259,8 +302,36 @@ bool BalanceTray::updateModule()
    return true;
 }
 
-
 /************************************************************************/
+
+bool BalanceTray::threadInit(){
+    sensorValues.zero();
+    return true;
+}
+
+/**************** JR3 Thread *************************/
+
+void BalanceTray::run()
+{
+    std::vector<double> rdx, ldx;
+
+    // sensor reading
+    int ret = iAnalogSensor->read(sensorValues);
+    if (ret == yarp::dev::IAnalogSensor::AS_OK)
+    {
+       printJr3(sensorValues);
+       if(!calculatePointFollowingForce(sensorValues, &rdx, &ldx)){
+           CD_ERROR("Calculating next point\n");
+           return;
+       }
+
+       rightArmBalThread->setCartesianPosition(rdx);
+       leftArmBalThread->setCartesianPosition(ldx);
+    }
+    else CD_ERROR("Reading JR3\n");
+}
+
+/****************************************************/
 
 bool BalanceTray::getRightArmFwdKin(std::vector<double> *currentX)
 {
@@ -299,7 +370,7 @@ bool BalanceTray::getLeftArmFwdKin(std::vector<double> *currentX)
     return true;
 }
 
-/***************** CONFIGURATION MODES FOR DEVICES *********************/
+/************ CONFIGURATION MODES FOR DEVICES *******/
 
 bool BalanceTray::configArmsToPosition(double sp, double acc){
 
@@ -379,8 +450,7 @@ bool BalanceTray::configArmsToPositionDirect(){
         if(! leftArmIControlMode2->setControlModes(leftArmControlModes.data())){
             CD_ERROR("Problems setting POSITION DIRECT mode of: left-arm\n");
             return false;
-        }
-        CD_SUCCESS("Configured to Position Direct\n");
+        }        
         return true;
 }
 
@@ -440,7 +510,7 @@ bool BalanceTray::executeTrajectory(std::vector<double> rx, std::vector<double> 
     rightArmTraj.addWaypoint(rx);
     rightArmTraj.addWaypoint(rxd);
     rightArmTraj.configurePath(ICartesianTrajectory::LINE);
-    rightArmTraj.configureVelocityProfile(ICartesianTrajectory::TRAPEZOIDAL);
+    rightArmTraj.configureVelocityProfile(ICartesianTrajectory::RECTANGULAR);
 
     if (!rightArmTraj.create())
     {
@@ -455,7 +525,7 @@ bool BalanceTray::executeTrajectory(std::vector<double> rx, std::vector<double> 
     leftArmTraj.addWaypoint(lx);
     leftArmTraj.addWaypoint(lxd);
     leftArmTraj.configurePath(ICartesianTrajectory::LINE);
-    leftArmTraj.configureVelocityProfile(ICartesianTrajectory::TRAPEZOIDAL);
+    leftArmTraj.configureVelocityProfile(ICartesianTrajectory::RECTANGULAR);
 
     if (!leftArmTraj.create())
     {
@@ -463,37 +533,37 @@ bool BalanceTray::executeTrajectory(std::vector<double> rx, std::vector<double> 
         return false;
     }
 
-    if (rightArmThread == 0)
-        rightArmThread = new BalanceThread(rightArmIEncoders, rightArmICartesianSolver, rightArmIPositionDirect, PT_MODE_MS );
+    if (rightArmTrajThread == 0)
+        rightArmTrajThread = new TrajectoryThread(rightArmIEncoders, rightArmICartesianSolver, rightArmIPositionDirect, PT_MODE_MS );
 
 
-    if (leftArmThread == 0)
-        leftArmThread = new BalanceThread(leftArmIEncoders, leftArmICartesianSolver, leftArmIPositionDirect, PT_MODE_MS );
+    if (leftArmTrajThread == 0)
+        leftArmTrajThread = new TrajectoryThread(leftArmIEncoders, leftArmICartesianSolver, leftArmIPositionDirect, PT_MODE_MS );
 
-    rightArmThread->setICartesianTrajectory(&rightArmTraj);
-    leftArmThread->setICartesianTrajectory(&leftArmTraj);
+    rightArmTrajThread->setICartesianTrajectory(&rightArmTraj);
+    leftArmTrajThread->setICartesianTrajectory(&leftArmTraj);
 
-    if (rightArmThread->isSuspended() && leftArmThread->isSuspended())
+    if (rightArmTrajThread->isSuspended() && leftArmTrajThread->isSuspended())
     {
-        rightArmThread->resetTime();
-        leftArmThread->resetTime();
-        rightArmThread->resume();
-        leftArmThread->resume();
+        rightArmTrajThread->resetTime();
+        leftArmTrajThread->resetTime();
+        rightArmTrajThread->resume();
+        leftArmTrajThread->resume();
     }
     else
     {
-        rightArmThread->start();
-        leftArmThread->start();
+        rightArmTrajThread->start();
+        leftArmTrajThread->start();
     }
 
     yarp::os::Time::delay(duration);
-    rightArmThread->suspend();
-    leftArmThread->suspend();
+    rightArmTrajThread->suspend();
+    leftArmTrajThread->suspend();
 
     return true;
 }
 
-bool BalanceTray::rotateTray(int axis, double angle, double duration, double maxvel){
+bool BalanceTray::rotateTrayByTrajectory(int axis, double angle, double duration, double maxvel){
 
     // first check
     if(axis<0 && axis>2){
@@ -516,7 +586,7 @@ bool BalanceTray::rotateTray(int axis, double angle, double duration, double max
     ldx[axis+3] = ldx[axis+3] + angle;
 
     if(setRefPosition(rdx, ldx))
-        CD_SUCCESS("Saved reference position\n");
+        CD_SUCCESS("Saved reference position\n");    
 
     if(!executeTrajectory(rx, lx, rdx, ldx, duration, maxvel)){
         CD_ERROR("Doing trajectory\n");
@@ -526,25 +596,145 @@ bool BalanceTray::rotateTray(int axis, double angle, double duration, double max
     return true;
 }
 
+bool BalanceTray::calculatePointFollowingForce(yarp::sig::Vector sensor, std::vector<double> *rdx, std::vector<double> *ldx)
+{
+    char plane ='0';
+    double increment;    
+    std::vector<double> rx, rdsx; // right current point, right destination point
+    std::vector<double> lx, ldsx; // left current point, left destination point
+
+    if(!getRefPosition(&rx, &lx)){
+        CD_ERROR("Getting last position\n");
+        return false;
+    }
+
+    // calculating position increment
+    // -- Turning X axis
+    if(sensor[13] > +0.8){
+        CD_DEBUG_NO_HEADER("Turning (+)X\n");
+        increment+=0.001;
+        plane = 'x';
+    }
+    /*
+    if(sensor[13] < -0.8){
+        CD_DEBUG("(-)X\n");
+        increment-=0.001;
+        plane = 'x';
+    }
+    */
+
+    if(sensor[19] < -0.8){
+        CD_DEBUG_NO_HEADER("(-)X\n");
+        increment-=0.001;
+        plane = 'x';
+    }
+
+    /*
+    if(sensor[19] > +0.8){
+        CD_DEBUG("(+)19\n");
+        increment+=0.001;
+        plane = 'x';
+    }
+    */
+
+    // -- Turning Y axis
+    if((sensor[17] < -0.8) || (sensor[23] > +0.8))
+    {
+        CD_DEBUG_NO_HEADER("(-)17 || (-)23\n");
+        increment-=0.001;
+        plane = 'y';
+
+    }
+
+    if((sensor[17] > +0.8) || (sensor[23] < -0.8))
+    {
+        CD_DEBUG_NO_HEADER("(+)17 || (+)23\n");
+        increment+=0.001;
+        plane = 'y';
+
+    }
+
+    // -- Turning Z axis
+    if(sensor[12] < -0.8 && sensor[18] > +0.8 ){
+        CD_DEBUG_NO_HEADER("+ Y\n");
+        increment+=0.001;
+        plane = 'z';
+    }
+
+    if(sensor[12] > +0.8 && sensor[18] < -0.8 ){
+        CD_DEBUG_NO_HEADER("+ Y\n");
+        increment-=0.001;
+        plane = 'z';
+    }
+
+    // copy current to destination
+    rdsx = rx;
+    ldsx = lx;
+
+    switch (plane) {
+        case 'x':
+            // increment rotation value in X axis
+            rdsx[3] = rdsx[3] + increment;
+            ldsx[3] = ldsx[3] + increment;
+            break;
+        case 'y':
+            // increment rotation value in Y axis
+            rdsx[4] = rdsx[4] + increment;
+            ldsx[4] = ldsx[4] + increment;
+            break;
+        case 'z':
+            // increment rotation value in Y axis
+            rdsx[5] = rdsx[5] + increment;
+            ldsx[5] = ldsx[5] + increment;
+            break;
+        case '0':
+            CD_INFO("Repose position\n");
+            break;
+    }
+
+    // transformation: Axis Angle Scaled -> Axis Angle
+    std::vector<double> rdsxaa, ldsxaa;
+    KinRepresentation::decodePose(rdsx, rdsxaa, KinRepresentation::CARTESIAN, KinRepresentation::AXIS_ANGLE, KinRepresentation::DEGREES );
+    KinRepresentation::decodePose(ldsx, ldsxaa, KinRepresentation::CARTESIAN, KinRepresentation::AXIS_ANGLE, KinRepresentation::DEGREES );
+
+    // Checks the joint limits!
+    CD_DEBUG_NO_HEADER("R-POSS: [");
+    for(int i=0; i<rdsxaa.size(); i++){
+        CD_DEBUG_NO_HEADER("%f ",rdsxaa[i]);
+    }
+    CD_DEBUG_NO_HEADER("]\n");
+
+    CD_DEBUG_NO_HEADER("L-POSS: [");
+    for(int i=0; i<ldsxaa.size(); i++){
+        CD_DEBUG_NO_HEADER("%f ",ldsxaa[i]);
+    }
+    CD_DEBUG_NO_HEADER("]\n");
+
+    if(/*rdsxaa[6]>5 || */ldsxaa[6]>5){
+        CD_WARNING("Turning STOP (> 5º)!!\n");
+        return false;
+    }
+
+
+    if(!setRefPosition(rdsx, ldsx)){
+        CD_ERROR("Saving reference position\n");
+        return false;
+    }
+
+    // send to the pointer
+    *rdx = rdsx;
+    *ldx = ldsx;
+
+    return true;
+}
+
+
 /************ REF POSITIONS *************************/
-
-bool BalanceTray::setRefPosition(std::vector<double> rx, std::vector<double> lx){;
-    rightArmRefpos = rx;
-    leftArmRefpos = lx;
-    return true;
-}
-
-bool BalanceTray::getRefPosition(std::vector<double> *rx, std::vector<double> *lx){;
-    *rx = rightArmRefpos;
-    *lx = leftArmRefpos;
-    CD_SUCCESS("Got reference position\n");
-    return true;
-}
 
 bool BalanceTray::homePosition(){
     // Prepare the last position        
         CD_INFO("Preparing position...\n");
-        configArmsToPosition(25,25);
+        configArmsToPosition(10,10);
         double rightArmPoss[7] = { 30.0, -25.5, -28.6,  78.7, -57.5,  70.6};
         double leftArmPoss[7]  = {-30.0,  25.5,  28.6, -78.7,  57.5, -70.6};
         std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+7); //teoSim (+6) teo (+7)
@@ -562,21 +752,51 @@ bool BalanceTray::homePosition(){
         if(! getLeftArmFwdKin(&leftArmFK))
             CD_ERROR("Doing Forward Kinematic of left-arm...\n");
 
-        setRefPosition(rightArmFK, leftArmFK);
-        CD_SUCCESS("Home position [OK]\n");
+        if(setHomePosition(rightArmFK, leftArmFK))
+            CD_SUCCESS("Home position saved\n");
+
+        if(setRefPosition(rightArmFK, leftArmFK))
+            CD_SUCCESS("Reference position saved\n");
+
         return true;
 }
 
-/************ SHOWING FK ****************************/
+bool BalanceTray::setHomePosition(std::vector<double> rx, std::vector<double> lx){
+    rightArmHomepos = rx;
+    leftArmHomepos = lx;
+    return true;
+}
 
-void BalanceTray::showFKinAAS(){
+bool BalanceTray::getHomePosition(std::vector<double> *rx, std::vector<double> *lx){;
+    *rx = rightArmHomepos;
+    *lx = leftArmHomepos;
+    CD_SUCCESS("Got home position\n");
+    return true;
+}
+
+bool BalanceTray::setRefPosition(std::vector<double> rx, std::vector<double> lx){;
+    rightArmRefpos = rx;
+    leftArmRefpos = lx;
+    return true;
+}
+
+bool BalanceTray::getRefPosition(std::vector<double> *rx, std::vector<double> *lx){;
+    *rx = rightArmRefpos;
+    *lx = leftArmRefpos;
+    CD_SUCCESS("Got reference position\n");
+    return true;
+}
+
+/************ SHOWING DIFFERENT VALUES *******************/
+
+void BalanceTray::printFKinAAS(){
     printf("R-arm pose : [");
     std::vector<double> rightArmPoint(6);
     if(! getRightArmFwdKin(&rightArmPoint))
         CD_ERROR("Doing Forward Kinematic of right-arm...\n");
     for(int i=0; i<rightArmPoint.size(); i++)
         printf("%f ",rightArmPoint[i]);
-    printf("]\n ");
+    printf("]\n");
 
     printf("L-arm pose: [");
     std::vector<double> leftArmPoint(6);
@@ -584,10 +804,10 @@ void BalanceTray::showFKinAAS(){
         CD_ERROR("Doing Forward Kinematic of left-arm...\n");
     for(int i=0; i<leftArmPoint.size(); i++)
         printf("%f ",leftArmPoint[i]);
-    printf("]\n ");
+    printf("]\n");
 }
 
-void BalanceTray::showFKinAA(){
+void BalanceTray::printFKinAA(){
     std::vector<double> rightArmPoint(6);
     if(! getRightArmFwdKin(&rightArmPoint))
         CD_ERROR("Doing Forward Kinematic of right-arm...\n");
@@ -596,7 +816,7 @@ void BalanceTray::showFKinAA(){
     printf("R-arm pose: [");
     for(int i=0; i<rightArmPointInAxisAngle.size(); i++)
         printf("%f ",rightArmPointInAxisAngle[i]);
-    printf("]\n ");
+    printf("]\n");
 
     std::vector<double> leftArmPoint(6);
     if(! getLeftArmFwdKin(&leftArmPoint))
@@ -606,43 +826,20 @@ void BalanceTray::showFKinAA(){
     printf("L-arm pose: [");
     for(int i=0; i<leftArmPointInAxisAngle.size(); i++)
         printf("%f ",leftArmPointInAxisAngle[i]);
-    printf("]\n ");
+    printf("]\n");
 }
 
-void BalanceTray::checkRotateMovement(){
-    rightArmThread = 0;
-    leftArmThread = 0;
-
-    rotateTray(0, +0.02, 2, 0.05);
-    showFKinAA();    
-
-    rotateTray(0, -0.04, 2, 0.05);
-    showFKinAA();
-
-
-    rotateTray(0, +0.04, 2, 0.05);
-    showFKinAA();
-
-
-    rotateTray(0, -0.04, 2, 0.05);
-    showFKinAA();
-
-
-    rotateTray(0, +0.02, 2, 0.05);
-    showFKinAA();
-
-
-    rightArmThread->stop();
-    leftArmThread->stop();
-    delete rightArmThread;
-    rightArmThread = 0;
-    delete leftArmThread;
-    leftArmThread = 0;
-}
-
-void BalanceTray::run()
+void BalanceTray::printJr3(yarp::sig::Vector values)
 {
+    CD_INFO_NO_HEADER("R: ( ");
+    for(int i=12; i<18; i++)
+        CD_INFO_NO_HEADER("%f ",values[i]);
+    CD_INFO_NO_HEADER(")\n");
 
+    CD_INFO_NO_HEADER("L: ( ");
+    for(int i=18; i<24; i++)
+        CD_INFO_NO_HEADER("%f ",values[i]);
+    CD_INFO_NO_HEADER(")\n");
 }
 
 }  // namespace teo

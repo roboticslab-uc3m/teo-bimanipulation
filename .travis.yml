@@ -1,0 +1,136 @@
+# Integración continua Travis CI
+
+# Lenguaje de programación
+
+language: cpp
+
+# Sistema operativo destino a probar
+
+os: linux
+
+# Distribución del sistema operativo
+
+dist: trusty
+
+# Requerimiento de permisos en Linux
+
+sudo: enabled
+
+# Compiladores a emplear
+
+compiler: 
+  - gcc
+  - clang
+  
+# compilación en paralelo con diferentes versiones de YARP
+
+env:
+  matrix:
+    - YARP_CHECKOUT=master
+    - YARP_CHECKOUT=v2.3.72.1 # stable version
+
+# Tareas a realizar antes de instalacción
+
+before_install:
+
+# Actualizar
+
+  - sudo apt-get -qq update
+
+# Configurar Git si no lo está
+
+
+  - if [ ! `git config --get user.email` ]; then `git config --global user.email 'user@example.com'`; fi
+  - if [ ! `git config --get user.name` ]; then `git config --global user.name 'Travis CI'`; fi
+
+# En caso de requerir instalar algo para la prueba
+
+install:
+
+# Instalar dependencias
+
+  - sudo apt-get install g++ # or clang++ (presumably)
+  - sudo apt-get install autoconf automake libtool
+  - sudo apt-get install pkg-config
+  - sudo apt-get install libpng-dev
+  - sudo apt-get install libjpeg8-dev
+  - sudo apt-get install libtiff5-dev
+  - sudo apt-get install zlib1g-dev
+
+# Intalar YCM
+  - cd  # go home
+  - mkdir -p repos && cd repos  # create $HOME/repos if it doesn't exist; then, enter it
+  - git clone https://github.com/robotology/ycm  # clone repository
+  - mkdir -p ycm/build && cd ycm/build && cmake ..  # configure
+  - make -j$(nproc)  # download external modules
+  - sudo make install && cd  # install and go home    
+  
+# Instalar Color-Debug
+  - cd
+  - mkdir -p ~/repos; cd ~/repos
+  - git clone https://github.com/roboticslab-uc3m/color-debug
+  - mkdir -p color-debug/build; cd color-debug/build
+  - cmake ..
+  - sudo make install 
+
+# Instalar YARP
+  - sudo apt install build-essential git
+  - sudo apt install libeigen3-dev # Needed for creating YARP lib_math used for kinematics, etc.
+  - sudo apt install qtbase5-dev qtdeclarative5-dev qtmultimedia5-dev qtdeclarative5-qtquick2-plugin qtdeclarative5-window-plugin qtdeclarative5-qtmultimedia-plugin qtdeclarative5-controls-plugin qtdeclarative5-dialogs-plugin libqt5svg5
+  - sudo apt install libjpeg8-dev # Needed for mjpeg carrier
+  - sudo apt install libedit-dev # Enables keyboard arrow keys within an RPC communication channel via terminal
+  - mkdir -p ~/repos && cd ~/repos # Create $HOME/repos if it doesn't exist; then, enter it
+  - git clone https://github.com/robotology/yarp  
+  - cd yarp
+  - git checkout "$YARP_CHECKOUT"
+  - mkdir build && cd build
+  - cmake .. -DSKIP_ACE=ON -DCREATE_LIB_MATH=ON -DCREATE_GUIS=ON -DCREATE_OPTIONAL_CARRIERS=ON -DENABLE_yarpcar_mjpeg=ON # configure
+  - make -j$(nproc) # Compile
+  - sudo make install && sudo ldconfig && cd # Install and go home
+  
+# Instalar KDL
+  - cd  # go home
+  - mkdir -p repos; cd repos  # create $HOME/repos if it doesn't exist; then, enter it
+  - git clone https://github.com/orocos/orocos_kinematics_dynamics.git
+  - cd orocos_kinematics_dynamics/orocos_kdl; mkdir build; cd build
+  - cmake ..
+  - make -j$(nproc)  # compile
+  - sudo make install; sudo ldconfig; cd  # install and go home
+  
+# Instalar Kinematics-dynamics
+  - cd  # go home
+  - mkdir -p repos; cd repos  # create $HOME/repos if it does not exist; then, enter it
+  - git clone https://github.com/roboticslab-uc3m/kinematics-dynamics.git  # Download kinematics-dynamics software
+  - cd kinematics-dynamics; mkdir build; cd build; cmake ..  # Configure the kinematics-dynamics software
+  - make -j$(nproc) # Compile
+  - sudo make install  # Install :-) 
+        
+  
+# Tareas a ejecutar antes de nuestra prueba
+
+before_script:
+
+  - cd
+  - mkdir -p repos; cd repos  
+  - git clone https://github.com/roboticslab-uc3m/teo-bimanipulation.git
+  - cd teo-bimanipulation; mkdir build; cd build; cmake ..   
+
+# Compilamos
+script:
+  - make -j$(nproc)  # Compile
+
+# En caso de compilación exitosa
+
+after_success:
+
+  - sudo make install
+  - sudo make uninstall
+
+# Notificaciones por correo
+notifications:
+  email:
+    recipients:
+      - rasantos@it.uc3m.es
+    on_success: change
+    on_failure: always
+

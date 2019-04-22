@@ -1,7 +1,6 @@
 // -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*-
 
 #include <yarp/os/RateThread.h>
-#include <yarp/os/Semaphore.h>
 
 #include <yarp/dev/IEncoders.h>
 #include <yarp/dev/IPositionDirect.h>
@@ -9,45 +8,39 @@
 #include <ConfigurationSelector.hpp>
 #include <ICartesianTrajectory.hpp>
 
-class BalanceThread : public yarp::os::RateThread
+class TrajectoryThread : public yarp::os::RateThread
 {
 public:
-    BalanceThread(yarp::dev::IEncoders *iEncoders,                  
+    TrajectoryThread(yarp::dev::IEncoders *iEncoders,
                   roboticslab::ICartesianSolver *iCartesianSolver,
+                  //roboticslab::ICartesianTrajectory *iCartTrajectory,
                   yarp::dev::IPositionDirect *iPositionDirect,
                   int period)
         : yarp::os::RateThread(period),
           iEncoders(iEncoders),
           iCartesianSolver(iCartesianSolver),
+          //iCartTrajectory(iCartTrajectory),
           iPositionDirect(iPositionDirect),
-          axes(0)
+          axes(0),
+          startTime(0)
     {}
 
-    void setCartesianPosition(std::vector<double> position) {
-       positionMutex.wait();
-       this->position = position;
-       positionMutex.post();
+    void setICartesianTrajectory(roboticslab::ICartesianTrajectory *iCartTrajectory) {
+        this->iCartTrajectory = iCartTrajectory;
     }
 
+    void resetTime();
 
-    void getCartesianPosition(std::vector<double> *position) {
-        positionMutex.wait();
-        *position = this->position;
-        positionMutex.post();
-    }
-
-
-
-protected:    
+protected:
     virtual bool threadInit();
     virtual void run();
 
 private:
-    yarp::os::Semaphore positionMutex;
-    yarp::dev::IEncoders *iEncoders;    
+    yarp::dev::IEncoders *iEncoders;
     roboticslab::ICartesianSolver *iCartesianSolver;
+    roboticslab::ICartesianTrajectory * iCartTrajectory;
     yarp::dev::IPositionDirect *iPositionDirect;
-    std::vector<double> position;
     int axes;
-};
+    double startTime;
 
+};
