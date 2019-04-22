@@ -63,7 +63,15 @@ install:
   - git clone https://github.com/robotology/ycm  # clone repository
   - mkdir -p ycm/build && cd ycm/build && cmake ..  # configure
   - make -j$(nproc)  # download external modules
-  - sudo make install && cd  # install and go home     
+  - sudo make install && cd  # install and go home    
+  
+# Instalar Color-Debug
+  - cd
+  - mkdir -p ~/repos; cd ~/repos
+  - git clone https://github.com/roboticslab-uc3m/color-debug
+  - mkdir -p color-debug/build; cd color-debug/build
+  - cmake ..
+  - sudo make install 
 
 # Instalar YARP
   - sudo apt install build-essential git
@@ -95,15 +103,7 @@ install:
   - git clone https://github.com/roboticslab-uc3m/kinematics-dynamics.git  # Download kinematics-dynamics software
   - cd kinematics-dynamics; mkdir build; cd build; cmake ..  # Configure the kinematics-dynamics software
   - make -j$(nproc) # Compile
-  - sudo make install  # Install :-)
-  
-# Instalar Color-Debug
-  - cd
-  - mkdir -p ~/repos; cd ~/repos
-  - git clone https://github.com/roboticslab-uc3m/color-debug
-  - mkdir -p color-debug/build; cd color-debug/build
-  - cmake ..
-  - sudo make install
+  - sudo make install  # Install :-) 
         
   
 # Tareas a ejecutar antes de nuestra prueba
