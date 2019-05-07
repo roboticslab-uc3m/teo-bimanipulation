@@ -14,7 +14,7 @@
 #include <yarp/os/Semaphore.h>
 
 
-#define DEFAULT_ROBOT "/teo" // teo or teoSim
+#define DEFAULT_ROBOT "/teoSim" // teo or teoSim
 #define PT_MODE_MS 50.0
 #define JR3_READING_MS 20.0
 
@@ -130,7 +130,7 @@ namespace teo
 
             /** calculate next point in relation to the forces read by the sensor **/
             bool calculatePointFollowingForce(yarp::sig::Vector sensor, std::vector<double> *rdx, std::vector<double> *ldx);
-            bool calculatePointOpposingForce(yarp::sig::Vector sensor, std::vector<double> *rdx, std::vector<double> *ldx);
+            bool calculatePointOpposedToForce(yarp::sig::Vector sensor, std::vector<double> *rdx, std::vector<double> *ldx);
 
             /** Check movements functions */
             void checkLinearlyMovement();
