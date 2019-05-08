@@ -140,7 +140,8 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
         }
 
     yarp::os::Property rightArmSolverOptions;
-    rightArmSolverOptions.fromConfigFile("/usr/local/share/teo-configuration-files/contexts/kinematics/rightArmKinematics.ini");
+    rightArmSolverOptions.fromConfigFile(RIGHTARM_KIN);
+    //rightArmSolverOptions.fromConfigFile("fixedTrunk-rightArm-fetch-kinematics.ini");
     rightArmSolverOptions.put("device","KdlSolver");
     //rightArmSolverOptions.put("maxIter", 1000); // iterator configuration
     //rightArmSolverOptions.put("eps", 1e-9); // precision
@@ -183,7 +184,7 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
         }
 
     yarp::os::Property leftArmSolverOptions;
-    leftArmSolverOptions.fromConfigFile("/usr/local/share/teo-configuration-files/contexts/kinematics/leftArmKinematics.ini");
+    leftArmSolverOptions.fromConfigFile(LEFTARM_KIN);
     leftArmSolverOptions.put("device", "KdlSolver");
     leftArmSolverOptions.put("mins", yarp::os::Value::makeList(qlMin.toString().c_str()));
     leftArmSolverOptions.put("maxs", yarp::os::Value::makeList(qlMax.toString().c_str()));
@@ -207,11 +208,11 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     // ** Unify TCP of right-arm and left-arm: apppending link to the tray's centroid
     /** Transformation matrix between the gripper and the tray **/
     // -- teoSim:     
-    double rightArmTeoSim[] = {2.32520914e-01, -3.87679122e-04, -1.76919815e-03,  1.28749440e+00, 1.29414246e+00, -1.16247860e+00};
-    double leftArmTeoSim[]  = {2.32520914e-01,  3.87679122e-04, -1.76919815e-03, -1.28749440e+00, 1.29414246e+00,  1.16247860e+00};
+    double rightArmTeoSim[] = {2.32520914e-01, -3.87679122e-04, -1.76919815e-03,  1.28749440e+00, -1.29414246e+00, -1.16247860e+00};
+    double leftArmTeoSim[]  = {2.32520914e-01,  3.87679122e-04, -1.76919815e-03, -1.28749440e+00,  1.29414246e+00,  1.16247860e+00};
     // -- teo    
     double rightArmTeoRobot[] = {0.23239932,  0.00130271,  0.00317922,  1.28710924,  1.27849306, -1.14349653}; //right
-    double leftArmTeoRobot[]  = {0.23026177, -0.00174248,  0.00273658, -1.28141404,  1.2773344,   1.14592588}; //left
+    double leftArmTeoRobot[]  = {0.23026177, -0.00174248,  0.00273658, 1.28141404, 1.2773344, 1.14592588}; //left
 
     std::vector<double> twist_right_N_T;
     std::vector<double> twist_left_N_T;
@@ -817,7 +818,6 @@ bool BalanceTray::calculatePointOpposedToForce(yarp::sig::Vector sensor, std::ve
         return false;
     }
 
-
     if(!setRefPosition(rdsx, ldsx)){
         CD_ERROR("Saving reference position\n");
         return false;
@@ -836,8 +836,8 @@ bool BalanceTray::homePosition(){
     // Prepare the last position        
         CD_INFO("Preparing position...\n");
         configArmsToPosition(10,10);
-        double rightArmPoss[7] = { 30.0, -25.5, -28.6,  78.7, -57.5,  70.6};
-        double leftArmPoss[7]  = {-30.0,  25.5,  28.6, -78.7,  57.5, -70.6};
+        double rightArmPoss[7] = {-30.0, -25.5,  28.6, -78.7,  57.5, -70.6};
+        double leftArmPoss[7]  = {-30.0,  25.5, -28.6, -78.7, -57.5, -70.6};
         std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+7); //teoSim (+6) teo (+7)
         std::vector<double> leftArm(&leftArmPoss[0], &leftArmPoss[0]+7);
         if(!moveJointsInPosition(rightArm, leftArm)){

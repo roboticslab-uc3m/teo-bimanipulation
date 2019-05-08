@@ -18,6 +18,10 @@
 #define PT_MODE_MS 50.0
 #define JR3_READING_MS 20.0
 
+// ini configuration files for kinematic
+#define RIGHTARM_KIN "/usr/local/share/teo-configuration-files/contexts/kinematics/fixedTrunk-rightArm-fetch-kinematics.ini"
+#define LEFTARM_KIN "/usr/local/share/teo-configuration-files/contexts/kinematics/fixedTrunk-leftArm-fetch-kinematics.ini"
+
 using namespace yarp::os;
 using namespace roboticslab;
 
