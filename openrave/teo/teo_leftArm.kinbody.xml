@@ -70,8 +70,8 @@
             <Body>r22</Body>
             <offsetfrom>r22</offsetfrom>
             <weight>1.0</weight>
-            <limitsdeg>-84.1 51.6</limitsdeg> <!-- <limitsdeg>-10 75</limitsdeg> -->
-            <axis>0 0 -1</axis>
+            <limitsdeg>-51.6 84.1</limitsdeg> <!-- <limitsdeg>-10 75</limitsdeg> -->
+            <axis>0 0 1</axis>
             <maxvel>3</maxvel>
             <resolution>1</resolution>
             </Joint>
@@ -118,14 +118,14 @@
             <Body>r24</Body>
             <offsetfrom>r24</offsetfrom>
             <weight>1.0</weight>
-            <limitsdeg>-76.4 101.3</limitsdeg>
-            <axis>0 0 -1</axis>
+            <limitsdeg>-101.3 76.4</limitsdeg>
+            <axis>0 0 1</axis>
             <maxvel>3</maxvel>
             <resolution>1</resolution>
             </Joint>
 
 	    <Body name="LeftFrontalWrist" type="dynamic">
-			<rotationaxis>0 0 1 -90</rotationaxis>
+	    <rotationaxis>0 0 1 -90</rotationaxis>
             <offsetfrom>r24</offsetfrom> 
             <Mass type="custom">
               <density>1</density>
@@ -148,7 +148,7 @@
             <Body name="r2Man" type="dynamic">
             <offsetfrom>LeftFrontalWrist</offsetfrom>
             <Translation>0 0 -0.2</Translation>
-	    <RotationAxis>0 0 1 -90</RotationAxis>
+            <RotationAxis>0 0 1 -90</RotationAxis>
             </Body>
 
             <Joint name="q2Man" type="hinge" enable="False">
@@ -157,39 +157,39 @@
             <limitsdeg>0 0</limitsdeg>
             </Joint>
             
-    <!-- TRAY (tool) -->     
-    <Body name ="tray" type="dynamic">
-    <offsetfrom>r2Man</offsetfrom>
-    <rotationaxis>1 0 0 90</rotationaxis>
-    <Translation> 0.0 0.02 -0.22</Translation>    
-	        <!-- recipiente -->
-           <Geom type="box">
-    	 	 <Extents>0.1175 0.165 0.001</Extents>  <!-- <Extents>0.1175 0.165 0.001</Extents>  -->
-             	<!-- <diffusecolor>0 0 0</diffusecolor> -->
-             	<Translation> 0.0 0.0 0.0</Translation> <!-- -0.08 -->
-           </Geom>
-	        <!-- asa 1 -->
-           <Geom type="cylinder">
-             <RotationAxis>0 0 1 90</RotationAxis>
-             <radius>0.015</radius>   
-     	     <height>0.045</height> 
-             <diffusecolor>0.23 0.98 0.2</diffusecolor>
-             <Translation> 0.0 -0.2 0.02</Translation> <!-- -0.08 -->
-           </Geom>	
-	        <!-- asa 2 -->
-           <Geom type="cylinder">
-             <RotationAxis>0 0 1 90</RotationAxis>
-             <radius>0.015</radius>   
-             <height>0.045</height> 
-             <diffusecolor>0.23 0.98 0.2</diffusecolor>
-             <Translation> 0.0 0.2 0.02</Translation> <!-- -0.08 -->
-           </Geom>		
-    </Body>
-    <joint name="dummy0" type="hinge" enable="false">
-        <body>r2Man</body>
-        <body>tray</body>
-        <limits>0 0</limits>
-    </joint>
+            <!-- TRAY (tool) -->     
+            <Body name ="tray" type="dynamic">
+            <offsetfrom>r2Man</offsetfrom>
+            <rotationaxis>1 0 0 90</rotationaxis>
+            <Translation> 0.0 0.02 -0.22</Translation>    
+	                <!-- recipiente -->
+                   <Geom type="box">
+            	 	 <Extents>0.1175 0.165 0.001</Extents>  <!-- <Extents>0.1175 0.165 0.001</Extents>  -->
+                     	<!-- <diffusecolor>0 0 0</diffusecolor> -->
+                     	<Translation> 0.0 0.0 0.0</Translation> <!-- -0.08 -->
+                   </Geom>
+	                <!-- asa 1 -->
+                   <Geom type="cylinder">
+                     <RotationAxis>0 0 1 90</RotationAxis>
+                     <radius>0.015</radius>   
+             	     <height>0.045</height> 
+                     <diffusecolor>0.23 0.98 0.2</diffusecolor>
+                     <Translation> 0.0 -0.2 0.02</Translation> <!-- -0.08 -->
+                   </Geom>	
+	                <!-- asa 2 -->
+                   <Geom type="cylinder">
+                     <RotationAxis>0 0 1 90</RotationAxis>
+                     <radius>0.015</radius>   
+                     <height>0.045</height> 
+                     <diffusecolor>0.23 0.98 0.2</diffusecolor>
+                     <Translation> 0.0 0.2 0.02</Translation> <!-- -0.08 -->
+                   </Geom>		
+            </Body>
+            <joint name="dummy0" type="hinge" enable="false">
+                <body>r2Man</body>
+                <body>tray</body>
+                <limits>0 0</limits>
+            </joint>
 
           </KinBody>
 
