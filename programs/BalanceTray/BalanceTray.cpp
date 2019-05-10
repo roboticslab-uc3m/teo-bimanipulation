@@ -317,19 +317,26 @@ void BalanceTray::run()
     std::vector<double> rdx, ldx;
 
     // sensor reading
-    int ret = iAnalogSensor->read(sensorValues);
-    if (ret == yarp::dev::IAnalogSensor::AS_OK)
-    {
-       printJr3(sensorValues);
-       if(!calculatePointFollowingForce(sensorValues, &rdx, &ldx)){
-           CD_ERROR("Calculating next point\n");
-           return;
-       }
+    //int ret = iAnalogSensor->read(sensorValues);
+    //if (ret == yarp::dev::IAnalogSensor::AS_OK)
+    //{
+       // reading JR3 sensor
+       //printJr3(sensorValues);
 
-       rightArmBalThread->setCartesianPosition(rdx);
-       leftArmBalThread->setCartesianPosition(ldx);
-    }
-    else CD_ERROR("Reading JR3\n");
+       //if(!calculatePointFollowingForce(sensorValues, &rdx, &ldx)){
+       //    CD_ERROR("Calculating next point\n");
+       //    return;
+       //}
+
+       //rightArmBalThread->setCartesianPosition(rdx);
+       //leftArmBalThread->setCartesianPosition(ldx);
+    //}
+    //else CD_ERROR("Reading JR3\n");
+
+    // reading keyboard (test)
+    calculatePointPressingKeyboard(&rdx, &ldx);
+    rightArmBalThread->setCartesianPosition(rdx);
+    leftArmBalThread->setCartesianPosition(ldx);
 }
 
 /****************************************************/
@@ -663,7 +670,7 @@ bool BalanceTray::calculatePointFollowingForce(yarp::sig::Vector sensor, std::ve
     }
 
     if(sensor[12] > +0.8 && sensor[18] < -0.8 ){
-        CD_DEBUG_NO_HEADER("+ Y\n");
+        CD_DEBUG_NO_HEADER("- Y\n");
         increment-=0.001;
         plane = 'z';
     }
@@ -830,6 +837,120 @@ bool BalanceTray::calculatePointOpposedToForce(yarp::sig::Vector sensor, std::ve
     return true;
 }
 
+bool BalanceTray::calculatePointPressingKeyboard(std::vector<double> *rdx, std::vector<double> *ldx){
+    char cKey;
+    char plane ='0';    
+    double increment= 0.001;
+    std::vector<double> rx, rdsx; // right current point, right destination point
+    std::vector<double> lx, ldsx; // left current point, left destination point
+
+    if(!getRefPosition(&rx, &lx)){
+        CD_ERROR("Getting last position\n");
+        return false;
+    }
+    else
+        CD_SUCCESS("Got reference position\n");
+
+    // Read the keyboard
+    cKey = ExampleLibrary::getch();    
+
+    // copy current to destination
+    rdsx = rx;
+    ldsx = lx;
+
+    switch(cKey)
+    {
+    case 65:
+        printf("Presiono Flecha Arriba\n");
+        CD_DEBUG_NO_HEADER("+ Y\n");
+        rdsx[4] = rdsx[4] + increment;
+        ldsx[4] = ldsx[4] + increment;
+        break;
+
+    case 66:
+        printf("Presiono Flecha Abajo\n");
+        CD_DEBUG_NO_HEADER("- Y\n");
+        rdsx[4] = rdsx[4] - increment;
+        ldsx[4] = ldsx[4] - increment;
+        break;
+
+    case 68:
+        printf("Presiono Flecha derecha\n");
+        CD_DEBUG_NO_HEADER("(-)X\n");
+        rdsx[3] = rdsx[3] - increment;
+        ldsx[3] = ldsx[3] - increment;
+        break;
+
+    case 67:
+        printf("Presiono Flecha izquierda\n");
+        CD_DEBUG_NO_HEADER("Turning (+)X\n");
+        rdsx[3] = rdsx[3] + increment;
+        ldsx[3] = ldsx[3] + increment;
+        break;
+
+    default:
+        CD_INFO("Repose position\n");
+        break;
+    }
+
+    /*
+        switch (plane) {
+            case 'x':
+                // increment rotation value in X axis
+                rdsx[3] = rdsx[3] + increment;
+                ldsx[3] = ldsx[3] + increment;
+                break;
+            case 'y':
+                // increment rotation value in Y axis
+                rdsx[4] = rdsx[4] + increment;
+                ldsx[4] = ldsx[4] + increment;
+                break;
+            case 'z':
+                // increment rotation value in Y axis
+                rdsx[5] = rdsx[5] + increment;
+                ldsx[5] = ldsx[5] + increment;
+                break;
+            case '0':
+                CD_INFO("Repose position\n");
+                break;
+        }
+
+        */
+
+        // transformation: Axis Angle Scaled -> Axis Angle
+        std::vector<double> rdsxaa, ldsxaa;
+        KinRepresentation::decodePose(rdsx, rdsxaa, KinRepresentation::CARTESIAN, KinRepresentation::AXIS_ANGLE, KinRepresentation::DEGREES );
+        KinRepresentation::decodePose(ldsx, ldsxaa, KinRepresentation::CARTESIAN, KinRepresentation::AXIS_ANGLE, KinRepresentation::DEGREES );
+
+        // Checks the joint limits!
+        CD_DEBUG_NO_HEADER("R-POSS: [");
+        for(int i=0; i<rdsxaa.size(); i++){
+            CD_DEBUG_NO_HEADER("%f ",rdsxaa[i]);
+        }
+        CD_DEBUG_NO_HEADER("]\n");
+
+        CD_DEBUG_NO_HEADER("L-POSS: [");
+        for(int i=0; i<ldsxaa.size(); i++){
+            CD_DEBUG_NO_HEADER("%f ",ldsxaa[i]);
+        }
+        CD_DEBUG_NO_HEADER("]\n");
+
+        if(rdsxaa[6]>5 || ldsxaa[6]>5){
+            CD_WARNING("Turning STOP (> 5º)!!\n");
+            return false;
+        }
+
+        if(!setRefPosition(rdsx, ldsx)){
+            CD_ERROR("Saving reference position\n");
+            return false;
+        }
+
+        // send to the pointer
+        *rdx = rdsx;
+        *ldx = ldsx;
+
+        return true;
+}
 /************ REF POSITIONS *************************/
 
 bool BalanceTray::homePosition(){
@@ -870,22 +991,27 @@ bool BalanceTray::setHomePosition(std::vector<double> rx, std::vector<double> lx
 
 bool BalanceTray::getHomePosition(std::vector<double> *rx, std::vector<double> *lx){;
     *rx = rightArmHomepos;
-    *lx = leftArmHomepos;
-    CD_SUCCESS("Got home position\n");
+    *lx = leftArmHomepos;    
+    CD_SUCCESS("Got home position\n"); // Note: arreglar
     return true;
 }
 
 bool BalanceTray::setRefPosition(std::vector<double> rx, std::vector<double> lx){;
     rightArmRefpos = rx;
     leftArmRefpos = lx;
-    return true;
+    if(!rightArmRefpos.empty() && !leftArmRefpos.empty())
+        return true;
+    else
+        return false;
 }
 
 bool BalanceTray::getRefPosition(std::vector<double> *rx, std::vector<double> *lx){;
     *rx = rightArmRefpos;
     *lx = leftArmRefpos;
-    CD_SUCCESS("Got reference position\n");
-    return true;
+    if(!rightArmRefpos.empty() && !leftArmRefpos.empty())
+        return true;
+    else
+        return false;
 }
 
 /************ SHOWING DIFFERENT VALUES *******************/

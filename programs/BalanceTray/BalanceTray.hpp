@@ -1,5 +1,7 @@
 // -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*-
 
+#include "ExampleLibrary.hpp"
+
 #include <yarp/os/all.h>
 #include <yarp/dev/all.h>
 #include <yarp/dev/IAnalogSensor.h>
@@ -135,6 +137,8 @@ namespace teo
             /** calculate next point in relation to the forces read by the sensor **/
             bool calculatePointFollowingForce(yarp::sig::Vector sensor, std::vector<double> *rdx, std::vector<double> *ldx);
             bool calculatePointOpposedToForce(yarp::sig::Vector sensor, std::vector<double> *rdx, std::vector<double> *ldx);
+            bool calculatePointPressingKeyboard(std::vector<double> *rdx, std::vector<double> *ldx);
+
 
             /** Check movements functions */
             void checkLinearlyMovement();
