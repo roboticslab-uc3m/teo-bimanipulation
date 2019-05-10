@@ -1,10 +1,13 @@
 // -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*-
 
+#include <stdio.h>
+#include <unistd.h>
+#include <termios.h>
+
 #ifndef __EXAMPLE_LIBRARY_HPP__
 #define __EXAMPLE_LIBRARY_HPP__
 
-namespace roboticslab
-{
+namespace teo{
 
 /**
  * @ingroup exampleLibrary
@@ -14,11 +17,17 @@ namespace roboticslab
  */
 class ExampleLibrary {
     public:
+        static char getch();
 
-    protected:
+    protected:    
+
+    private:
+
+
 
 };
 
-}  // namespace roboticslab
 
 #endif  // __EXAMPLE_LIBRARY_HPP__
+
+}
