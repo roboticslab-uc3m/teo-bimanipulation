@@ -23,7 +23,8 @@ target_link_libraries(${KEYWORD}
                     ROBOTICSLAB::KdlVectorConverterLib
                     ROBOTICSLAB::KinematicRepresentationLib
                     ROBOTICSLAB::TrajectoryLib
-                    ROBOTICSLAB::ColorDebug)
+                    ROBOTICSLAB::ColorDebug
+                    ExampleLibrary)
 install(TARGETS ${KEYWORD} DESTINATION bin)
 
 ENDIF (ENABLE_balanceTray)

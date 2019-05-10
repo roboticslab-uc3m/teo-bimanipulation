@@ -14,7 +14,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake
                               ${CMAKE_SOURCE_DIR}/cmake/ycm-modules)
 
 ### options: cpp libraries
-#option(ENABLE_ExampleLibrary "Choose if you want to compile ExampleLibrary" TRUE)
+option(ENABLE_ExampleLibrary "Choose if you want to compile ExampleLibrary" TRUE)
 
 ### options: cpp programs
 option(ENABLE_balanceTray "Choose if you want to compile balanceTray demostration" TRUE)
