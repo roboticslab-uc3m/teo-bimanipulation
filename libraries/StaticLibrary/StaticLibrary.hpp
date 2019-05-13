@@ -1,7 +1,6 @@
 // -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*-
 
 #include <stdio.h>
-#include <unistd.h>
 #include <termios.h>
 
 #ifndef __EXAMPLE_LIBRARY_HPP__
@@ -17,14 +16,7 @@ namespace teo{
  */
 class ExampleLibrary {
     public:
-        static char getch();
-
-    protected:    
-
-    private:
-
-
-
+        static int getch();
 };
 
 
