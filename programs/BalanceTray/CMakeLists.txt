@@ -6,7 +6,6 @@ IF (ENABLE_balanceTray)
 
 set(KEYWORD "balanceTray")
 
-
 find_package(YARP REQUIRED)
 find_package(COLOR_DEBUG REQUIRED)
 find_package(orocos_kdl 1.4 QUIET)
@@ -24,7 +23,7 @@ target_link_libraries(${KEYWORD}
                     ROBOTICSLAB::KinematicRepresentationLib
                     ROBOTICSLAB::TrajectoryLib
                     ROBOTICSLAB::ColorDebug
-                    ExampleLibrary)
+                    StaticLibrary)
 install(TARGETS ${KEYWORD} DESTINATION bin)
 
 ENDIF (ENABLE_balanceTray)

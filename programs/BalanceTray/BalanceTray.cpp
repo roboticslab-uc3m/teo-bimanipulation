@@ -334,9 +334,9 @@ void BalanceTray::run()
     //else CD_ERROR("Reading JR3\n");
 
     // reading keyboard (test)
-    calculatePointPressingKeyboard(&rdx, &ldx);
+    calculatePointPressingKeyboard(&rdx, &ldx);    
     rightArmBalThread->setCartesianPosition(rdx);
-    leftArmBalThread->setCartesianPosition(ldx);
+    leftArmBalThread->setCartesianPosition(ldx);    
 }
 
 /****************************************************/
@@ -838,7 +838,7 @@ bool BalanceTray::calculatePointOpposedToForce(yarp::sig::Vector sensor, std::ve
 }
 
 bool BalanceTray::calculatePointPressingKeyboard(std::vector<double> *rdx, std::vector<double> *ldx){
-    char cKey;
+    int cKey;
     char plane ='0';    
     double increment= 0.001;
     std::vector<double> rx, rdsx; // right current point, right destination point
@@ -852,7 +852,7 @@ bool BalanceTray::calculatePointPressingKeyboard(std::vector<double> *rdx, std::
         CD_SUCCESS("Got reference position\n");
 
     // Read the keyboard
-    cKey = ExampleLibrary::getch();    
+    cKey = ExampleLibrary::getch();
 
     // copy current to destination
     rdsx = rx;
@@ -861,61 +861,37 @@ bool BalanceTray::calculatePointPressingKeyboard(std::vector<double> *rdx, std::
     switch(cKey)
     {
     case 65:
-        printf("Presiono Flecha Arriba\n");
+        printf("Presiono flecha Arriba\n");
         CD_DEBUG_NO_HEADER("+ Y\n");
         rdsx[4] = rdsx[4] + increment;
         ldsx[4] = ldsx[4] + increment;
         break;
 
     case 66:
-        printf("Presiono Flecha Abajo\n");
+        printf("Presiono flecha Abajo\n");
         CD_DEBUG_NO_HEADER("- Y\n");
         rdsx[4] = rdsx[4] - increment;
         ldsx[4] = ldsx[4] - increment;
         break;
 
     case 68:
-        printf("Presiono Flecha derecha\n");
+        printf("Presiono flecha izquierda\n");
         CD_DEBUG_NO_HEADER("(-)X\n");
         rdsx[3] = rdsx[3] - increment;
         ldsx[3] = ldsx[3] - increment;
         break;
 
     case 67:
-        printf("Presiono Flecha izquierda\n");
+        printf("Presiono flecha derecha\n");
         CD_DEBUG_NO_HEADER("Turning (+)X\n");
         rdsx[3] = rdsx[3] + increment;
         ldsx[3] = ldsx[3] + increment;
         break;
 
     default:
-        CD_INFO("Repose position\n");
+        CD_DEBUG_NO_HEADER("Repose position\n");
         break;
     }
-
-    /*
-        switch (plane) {
-            case 'x':
-                // increment rotation value in X axis
-                rdsx[3] = rdsx[3] + increment;
-                ldsx[3] = ldsx[3] + increment;
-                break;
-            case 'y':
-                // increment rotation value in Y axis
-                rdsx[4] = rdsx[4] + increment;
-                ldsx[4] = ldsx[4] + increment;
-                break;
-            case 'z':
-                // increment rotation value in Y axis
-                rdsx[5] = rdsx[5] + increment;
-                ldsx[5] = ldsx[5] + increment;
-                break;
-            case '0':
-                CD_INFO("Repose position\n");
-                break;
-        }
-
-        */
 
         // transformation: Axis Angle Scaled -> Axis Angle
         std::vector<double> rdsxaa, ldsxaa;
