@@ -3,23 +3,23 @@
 #include <stdio.h>
 #include <termios.h>
 
-#ifndef __EXAMPLE_LIBRARY_HPP__
-#define __EXAMPLE_LIBRARY_HPP__
+#ifndef __STATIC_LIBRARY_HPP__
+#define __STATIC_LIBRARY_HPP__
 
 namespace teo{
 
 /**
- * @ingroup exampleLibrary
+ * @ingroup staticLibrary
  *
- * @brief exampleLibrary
+ * @brief staticLibrary
  *
  */
-class ExampleLibrary {
+class StaticLibrary {
     public:
         static int getch();
 };
 
 
-#endif  // __EXAMPLE_LIBRARY_HPP__
+#endif  // __STATIC_LIBRARY_HPP__
 
 }

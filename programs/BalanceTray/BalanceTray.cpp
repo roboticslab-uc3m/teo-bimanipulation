@@ -18,29 +18,40 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
         printf("BalanceTray options:\n");
         printf("\t--help (this help)\t--from [file.ini]\t--context [path]\n");
         printf("\t--robot: %s [%s]\n",robot.c_str(),DEFAULT_ROBOT);
+        printf("\t--jr3: if you want to use jr3 sensors. By default, it works with keyboard");
         ::exit(0);
     }
 
+    // checking control mode:
+    useJr3 = false;
+    if(rf.check("jr3"))
+    {
+        CD_INFO_NO_HEADER("Mode JR3 activated [OK] \n");
+        useJr3 = true;
+    }
+    else CD_INFO_NO_HEADER("Mode KEYBOARD activated [OK]\n");
+
     std::string balanceTrayStr("/balanceTray");
 
-    // ------ ANALOG SENSOR ------
+    // ------ ANALOG SENSOR ------   
+    if(useJr3){
+        yarp::os::Property options;
+            options.put("device","Jr3");
 
-    yarp::os::Property options;
-        options.put("device","Jr3");
-
-    if(!jr3card.open(options)) {
-          std::printf("Device not available.\n");
-          jr3card.close();
-          yarp::os::Network::fini();
-          return 1;
-    }
-
-    if ( ! jr3card.view(iAnalogSensor) )
-        {
-            CD_ERROR("Problems acquiring JR3 interface\n");
-            return 1;
+        if(!jr3card.open(options)) {
+              std::printf("Device not available.\n");
+              jr3card.close();
+              yarp::os::Network::fini();
+              return 1;
         }
-    CD_SUCCESS("Acquired JR3 interface\n");
+
+        if (!jr3card.view(iAnalogSensor) )
+            {
+                CD_ERROR("Problems acquiring JR3 interface\n");
+                return 1;
+            }
+        CD_SUCCESS("Acquired JR3 interface\n");
+    }
 
     // ------ RIGHT ARM -------
 
@@ -250,12 +261,15 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     CD_INFO_NO_HEADER("Put the tray and press a Key...\n");
     getchar();
 
-    int ret = iAnalogSensor->calibrateSensor();
-    if(ret!=0){
-        CD_ERROR("Calibrating sensors...\n");
-        return false;
+    // Calibrate sensor ... JR3
+    if(useJr3){
+        int ret = iAnalogSensor->calibrateSensor();
+        if(ret!=0){
+            CD_ERROR("Calibrating sensors...\n");
+            return false;
+        }
+        else CD_SUCCESS("JR3 sensors calibrated\n");
     }
-    else CD_SUCCESS("JR3 sensors calibrated\n");
 
     if(configArmsToPositionDirect())
         CD_SUCCESS("Configured to Position Direct\n");
@@ -268,7 +282,7 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     rightArmBalThread = new BalanceThread(rightArmIEncoders, rightArmICartesianSolver, rightArmIPositionDirect, PT_MODE_MS );
     leftArmBalThread = new BalanceThread(leftArmIEncoders, leftArmICartesianSolver, leftArmIPositionDirect, PT_MODE_MS );
 
-    // start JR3 reading thread
+    // start input reading thread: JR3/keyboard
     this->start();
 
     // start
@@ -313,30 +327,30 @@ bool BalanceTray::threadInit(){
 /**************** JR3 Thread *************************/
 
 void BalanceTray::run()
-{
+{    
     std::vector<double> rdx, ldx;
 
     // sensor reading
-    //int ret = iAnalogSensor->read(sensorValues);
-    //if (ret == yarp::dev::IAnalogSensor::AS_OK)
-    //{
-       // reading JR3 sensor
-       //printJr3(sensorValues);
+        if(useJr3){
+            int ret = iAnalogSensor->read(sensorValues);
+            if (ret == yarp::dev::IAnalogSensor::AS_OK)
+            {
+               // reading JR3 sensor
+               printJr3(sensorValues);
 
-       //if(!calculatePointFollowingForce(sensorValues, &rdx, &ldx)){
-       //    CD_ERROR("Calculating next point\n");
-       //    return;
-       //}
+               if(!calculatePointFollowingForce(sensorValues, &rdx, &ldx)){
+                   CD_ERROR("Calculating next point\n");
+                   return;
+               }
+            }
+            else CD_ERROR("Reading JR3\n");
+        }
 
-       //rightArmBalThread->setCartesianPosition(rdx);
-       //leftArmBalThread->setCartesianPosition(ldx);
-    //}
-    //else CD_ERROR("Reading JR3\n");
+    // reading keyboard (bloqueante: hasta que no se presiona una tecla, no continua la ejecución del hilo)
+        else calculatePointPressingKeyboard(&rdx, &ldx);
 
-    // reading keyboard (test)
-    calculatePointPressingKeyboard(&rdx, &ldx);    
     rightArmBalThread->setCartesianPosition(rdx);
-    leftArmBalThread->setCartesianPosition(ldx);    
+    leftArmBalThread->setCartesianPosition(ldx);
 }
 
 /****************************************************/
@@ -852,7 +866,7 @@ bool BalanceTray::calculatePointPressingKeyboard(std::vector<double> *rdx, std::
         CD_SUCCESS("Got reference position\n");
 
     // Read the keyboard
-    cKey = ExampleLibrary::getch();
+    cKey = StaticLibrary::getch();
 
     // copy current to destination
     rdsx = rx;

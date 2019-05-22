@@ -9,7 +9,7 @@ namespace teo{
    Capture characters from standard input without waiting for enter to be pressed
 */
 
-    int ExampleLibrary::getch(void)
+    int StaticLibrary::getch(void)
     {
        struct termios oldattr, newattr;
        int ch;

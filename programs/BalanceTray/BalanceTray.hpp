@@ -17,7 +17,7 @@
 
 #define DEFAULT_ROBOT "/teoSim" // teo or teoSim
 #define PT_MODE_MS 50.0
-#define JR3_READING_MS 20.0
+#define INPUT_READING_MS 20.0
 
 // ini configuration files for kinematic
 #define RIGHTARM_KIN "/usr/local/share/teo-configuration-files/contexts/kinematics/fixedTrunk-rightArm-fetch-kinematics.ini"
@@ -38,10 +38,13 @@ namespace teo
    class BalanceTray : public yarp::os::RFModule, public yarp::os::RateThread
     {        
         public:
-        BalanceTray() :  yarp::os::RateThread(JR3_READING_MS) {} // constructor
+        BalanceTray() :  yarp::os::RateThread(INPUT_READING_MS) {} // constructor
         virtual bool configure(yarp::os::ResourceFinder &rf);
 
         private:
+
+            /** control mode: jr3/keyboard **/
+            bool useJr3;
 
             /** RFModule interruptModule. */
             virtual bool interruptModule();
