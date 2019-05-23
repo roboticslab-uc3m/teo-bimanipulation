@@ -27,7 +27,6 @@ compiler:
 env:
   matrix:
     - YARP_CHECKOUT=master
-    - YARP_CHECKOUT=v2.3.72.1 # stable version
 
 # Tareas a realizar antes de instalacción
 
@@ -111,8 +110,7 @@ install:
 before_script:
 
   - cd
-  - mkdir -p repos; cd repos  
-  - git clone https://github.com/roboticslab-uc3m/teo-bimanipulation.git
+  - cd repos  
   - cd teo-bimanipulation; mkdir build; cd build; cmake ..   
 
 # Compilamos
