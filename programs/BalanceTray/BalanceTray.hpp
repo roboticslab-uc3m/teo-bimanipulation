@@ -15,7 +15,7 @@
 #include <yarp/os/Semaphore.h>
 
 
-#define DEFAULT_ROBOT "/teoSim" // teo or teoSim
+#define DEFAULT_ROBOT "/teo" // teo or teoSim
 #define PT_MODE_MS 50.0
 #define INPUT_READING_MS 20.0
 
@@ -61,9 +61,9 @@ namespace teo
             /** Encoders **/
             yarp::dev::IEncoders *rightArmIEncoders;
             /** Right Arm ControlMode2 Interface */
-            yarp::dev::IControlMode2 *rightArmIControlMode2;
+            yarp::dev::IControlMode *rightArmIControlMode;
             /** Right Arm PositionControl2 Interface */
-            yarp::dev::IPositionControl2 *rightArmIPositionControl2;
+            yarp::dev::IPositionControl *rightArmIPositionControl;
             /** Right Arm PositionDirect Interface */
             yarp::dev::IPositionDirect *rightArmIPositionDirect;
             /** Right Arm ControlLimits2 Interface */
@@ -86,9 +86,9 @@ namespace teo
             /** Encoders **/
             yarp::dev::IEncoders *leftArmIEncoders;
             /** Left Arm ControlMode2 Interface */
-            yarp::dev::IControlMode2 *leftArmIControlMode2;
+            yarp::dev::IControlMode *leftArmIControlMode;
             /** Left Arm PositionControl2 Interface */
-            yarp::dev::IPositionControl2 *leftArmIPositionControl2;
+            yarp::dev::IPositionControl *leftArmIPositionControl;
             /** Left Arm PositionDirect Interface */
             yarp::dev::IPositionDirect *leftArmIPositionDirect;
             /** Left Arm ControlLimits2 Interface */
