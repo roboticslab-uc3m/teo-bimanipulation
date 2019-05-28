@@ -15,9 +15,10 @@
 #include <yarp/os/Semaphore.h>
 
 
-#define DEFAULT_ROBOT "/teo" // teo or teoSim
+#define DEFAULT_ROBOT "teo" // teo or teoSim
 #define PT_MODE_MS 50.0
 #define INPUT_READING_MS 20.0
+#define INCREMENT 0.0005
 
 // ini configuration files for kinematic
 #define RIGHTARM_KIN "/usr/local/share/teo-configuration-files/contexts/kinematics/fixedTrunk-rightArm-fetch-kinematics.ini"
@@ -42,6 +43,9 @@ namespace teo
         virtual bool configure(yarp::os::ResourceFinder &rf);
 
         private:
+
+            /** robot used (teo/teoSim) **/
+            std::string robot;
 
             /** control mode: jr3/keyboard **/
             bool useJr3;
@@ -68,6 +72,9 @@ namespace teo
             yarp::dev::IPositionDirect *rightArmIPositionDirect;
             /** Right Arm ControlLimits2 Interface */
             yarp::dev::IControlLimits *rightArmIControlLimits;
+            /** Right Arm RemoteVariables **/
+            yarp::dev::IRemoteVariables *rightArmIRemoteVariables;
+
             /** Solver device **/
             yarp::dev::PolyDriver rightArmSolverDevice;
             ICartesianSolver *rightArmICartesianSolver;
@@ -93,6 +100,9 @@ namespace teo
             yarp::dev::IPositionDirect *leftArmIPositionDirect;
             /** Left Arm ControlLimits2 Interface */
             yarp::dev::IControlLimits *leftArmIControlLimits;
+            /** Left Arm RemoteVariables **/
+            yarp::dev::IRemoteVariables *leftArmIRemoteVariables;
+
             /** Solver device **/
             yarp::dev::PolyDriver leftArmSolverDevice;
             ICartesianSolver *leftArmICartesianSolver;

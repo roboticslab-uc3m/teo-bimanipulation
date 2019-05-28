@@ -9,8 +9,8 @@ namespace teo
 
 bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
 {
-    printf("inicia el configure\n");
-    std::string robot = rf.check("robot",yarp::os::Value(DEFAULT_ROBOT),"name of /robot to be used").asString();
+    printf("inicia el configure\n");    
+    robot = rf.check("robot",yarp::os::Value(DEFAULT_ROBOT),"name of /robot to be used").asString();
 
     printf("--------------------------------------------------------------\n");
     if (rf.check("help"))
@@ -18,7 +18,7 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
         printf("BalanceTray options:\n");
         printf("\t--help (this help)\t--from [file.ini]\t--context [path]\n");
         printf("\t--robot: %s [%s]\n",robot.c_str(),DEFAULT_ROBOT);
-        printf("\t--jr3: if you want to use jr3 sensors. By default, it works with keyboard");
+        printf("\t--jr3: if you want to use jr3 sensors. By default, it works with keyboard\n");
         ::exit(0);
     }
 
@@ -50,6 +50,7 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
                 CD_ERROR("Problems acquiring JR3 interface\n");
                 return 1;
             }
+
         CD_SUCCESS("Acquired JR3 interface\n");
     }
 
@@ -57,7 +58,7 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
 
     yarp::os::Property rightArmOptions;
     rightArmOptions.put("device","remote_controlboard");
-    rightArmOptions.put("remote",robot+"/rightArm");
+    rightArmOptions.put("remote","/"+robot+"/rightArm");
     rightArmOptions.put("local",balanceTrayStr+"/"+robot+"/rightArm");
     rightArmDevice.open(rightArmOptions);
     if(!rightArmDevice.isValid()) {
@@ -67,21 +68,7 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
       return false;
     }    
 
-    if (!rightArmDevice.view(rightArmIControlMode) ) { // connecting our device with "control mode 2" interface, initializing which control mode we want (position)
-        CD_ERROR("Problems acquiring rightArmIControlMode interface\n");
-        return false;
-    } else
-        CD_INFO("Acquired rightArmIControlMode interface\n");
-
-
-    if (!rightArmDevice.view(rightArmIPositionControl) ) { // connecting our device with "position control 2" interface (configuring our device: speed, acceleration... and sending joint positions)
-        CD_ERROR("Problems acquiring rightArmIPositionControl interface\n");
-        return false;
-    } else
-        CD_INFO("Acquired rightArmIPositionControl interface\n");
-
     // connecting our device with "IEncoders" interface
-
     if (!rightArmDevice.view(rightArmIEncoders) ) {
         CD_ERROR("Problems acquiring rightArmIEncoders interface\n");
         return false;
@@ -89,16 +76,43 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     else
     {
         CD_INFO("Acquired leftArmIEncoders interface\n");
-        if(!rightArmIPositionControl->getAxes(&numRightArmJoints))
+        if(!rightArmIEncoders->getAxes(&numRightArmJoints))
             CD_ERROR("Problems acquiring numRightArmJoints\n");
     }
+
+    if (!rightArmDevice.view(rightArmIControlMode) ) { // connecting our device with "control mode 2" interface, initializing which control mode we want (position)
+        CD_ERROR("Problems acquiring rightArmIControlMode interface\n");
+        return false;
+    } else
+        CD_INFO("Acquired rightArmIControlMode interface\n");    
+
+    // -- connecting our device with "PositionControl" interface
+    if (!rightArmDevice.view(rightArmIPositionControl) ) { // connecting our device with "position control 2" interface (configuring our device: speed, acceleration... and sending joint positions)
+        CD_ERROR("Problems acquiring rightArmIPositionControl interface\n");
+        return false;
+    } else
+        CD_INFO("Acquired rightArmIPositionControl interface\n");
+
+    // -- connecting our device with "PositionDirect" interface
+    if (!rightArmDevice.view(rightArmIPositionDirect) ) { // connecting our device with "position control 2" interface (configuring our device: speed, acceleration... and sending joint positions)
+        CD_ERROR("Problems acquiring rightArmIPositionDirect interface\n");
+        return false;
+    } else
+        CD_INFO("Acquired rightArmIPositionDirect interface\n");
+
+    // -- connecting our device with "RemoteVariables" interface
+    if (!rightArmDevice.view(rightArmIRemoteVariables) ) { // connecting our device with "position control 2" interface (configuring our device: speed, acceleration... and sending joint positions)
+        CD_ERROR("Problems acquiring rightArmIRemoteVariables interface\n");
+        return false;
+    } else
+        CD_INFO("Acquired rightArmIRemoteVariables interface\n");
 
     // ------ LEFT ARM -------
 
     yarp::os::Property leftArmOptions;
     leftArmOptions.put("device","remote_controlboard");
-    leftArmOptions.put("remote",robot+"/leftArm");
-    leftArmOptions.put("local",balanceTrayStr+robot+"/leftArm");
+    leftArmOptions.put("remote","/"+robot+"/leftArm");
+    leftArmOptions.put("local",balanceTrayStr+"/"+robot+"/leftArm");
     leftArmDevice.open(leftArmOptions);
     if(!leftArmDevice.isValid()) {
       CD_ERROR("robot leftArm device not available.\n");
@@ -107,18 +121,6 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
       return false;
     }
 
-    if (!leftArmDevice.view(leftArmIControlMode) ) { // connecting our device with "control mode 2" interface, initializing which control mode we want (position)
-        CD_ERROR("Problems acquiring leftArmIControlMode interface\n");
-        return false;
-    } else
-        CD_INFO("Acquired leftArmIControlMode interface\n");
-
-    if (!leftArmDevice.view(leftArmIPositionControl) ) { // connecting our device with "position control 2" interface (configuring our device: speed, acceleration... and sending joint positions)
-        CD_ERROR("Problems acquiring leftArmIPositionControl interface\n");
-        return false;
-    } else
-        CD_INFO("Acquired leftArmIPositionControl interface\n");
-
     // connecting our device with "IEncoders" interface
 
     if (!leftArmDevice.view(leftArmIEncoders) ) { // connecting our device with "IEncoders" interface
@@ -126,9 +128,37 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
         return false;
     } else {
         CD_INFO("Acquired leftArmIEncoders interface\n");
-        if(!leftArmIPositionControl->getAxes(&numLeftArmJoints))
+        if(!leftArmIEncoders->getAxes(&numLeftArmJoints))
             CD_ERROR("Problems acquiring numLeftArmJoints\n");
     }
+
+    // -- connecting our device with "PositionControl" interface
+    if (!leftArmDevice.view(leftArmIControlMode) ) { // connecting our device with "control mode 2" interface, initializing which control mode we want (position)
+        CD_ERROR("Problems acquiring leftArmIControlMode interface\n");
+        return false;
+    } else
+        CD_INFO("Acquired leftArmIControlMode interface\n");
+
+
+    if (!leftArmDevice.view(leftArmIPositionControl) ) { // connecting our device with "position control 2" interface (configuring our device: speed, acceleration... and sending joint positions)
+        CD_ERROR("Problems acquiring leftArmIPositionControl interface\n");
+        return false;
+    } else
+        CD_INFO("Acquired leftArmIPositionControl interface\n");
+
+    // -- connecting our device with "PositionDirect" interface
+    if (!leftArmDevice.view(leftArmIPositionDirect) ) { // connecting our device with "position control 2" interface (configuring our device: speed, acceleration... and sending joint positions)
+        CD_ERROR("Problems acquiring leftArmIPositionDirect interface\n");
+        return false;
+    } else
+        CD_INFO("Acquired leftArmIPositionDirect interface\n");
+
+    // -- connecting our device with "RemoteVariables" interface
+    if (!leftArmDevice.view(leftArmIRemoteVariables) ) { // connecting our device with "position control 2" interface (configuring our device: speed, acceleration... and sending joint positions)
+        CD_ERROR("Problems acquiring leftArmIRemoteVariables interface\n");
+        return false;
+    } else
+        CD_INFO("Acquired leftArmIRemoteVariables interface\n");
 
 
     // ----- Configuring KDL Solver for right-arm -----
@@ -199,6 +229,7 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     leftArmSolverOptions.put("device", "KdlSolver");
     leftArmSolverOptions.put("mins", yarp::os::Value::makeList(qlMin.toString().c_str()));
     leftArmSolverOptions.put("maxs", yarp::os::Value::makeList(qlMax.toString().c_str()));
+    //leftArmSolverOptions.put("ik", "st"); // to use screw theory IK
     //leftArmSolverOptions.put("HN", yarp::os::Value::makeList("-0.00984635  -0.9989744  -0.04419502  0.23194013 0.00484966 -0.04424435 0.99900897 0.01027258 -0.99993976 0.00962226  0.00528033 -0.00223408 0 0 0 1"));
     leftArmSolverDevice.open(leftArmSolverOptions);
 
@@ -223,20 +254,20 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     double rightArmTeoSim[] = {1.73545231e-03, -3.80284497e-04, 2.28085790e-01, 1.57115675e+00, 9.19705112e-02, 8.01720722e-02};
     double leftArmTeoSim[]  = {1.73545231e-03,  3.80284497e-04, 2.28085790e-01,-1.57115675e+00, 9.19705112e-02,-8.01720722e-02};
     // -- teo    
-    double rightArmTeoRobot[] = {-2.26235972e-03, 5.39777638e-04, 2.27475981e-01, 1.56644086e+00, 7.18966513e-02, 8.73088252e-02}; //right
-    double leftArmTeoRobot[]  = {3.54425333e-04,  -9.28329662e-04, 2.26924180e-01, -1.56524180e+00, 8.31721715e-02, -8.03880187e-02}; //left
+    double rightArmTeoRobot[] = {-2.19253955e-03, 5.17492742e-04, 2.27558963e-01, 1.56637737e+00, 7.62154203e-02, 9.11379407e-02}; //right
+    double leftArmTeoRobot[]  = {-1.94606925e-03,-1.34022884e-03, 2.26174230e-01,-1.56272379e+00, 7.85987985e-02,-9.15834717e-02}; //left
 
     std::vector<double> twist_right_N_T;
     std::vector<double> twist_left_N_T;
 
-    if(DEFAULT_ROBOT=="/teoSim"){
+    if(DEFAULT_ROBOT=="teoSim"){
         for(int i; i<6; i++)
             twist_right_N_T.push_back(rightArmTeoSim[i]);
         for(int i; i<6; i++)
             twist_left_N_T.push_back(leftArmTeoSim[i]);
         CD_SUCCESS("\n");
     }
-    else if(DEFAULT_ROBOT=="/teo")
+    else if(DEFAULT_ROBOT=="teo")
     {
         for(int i; i<6; i++)
             twist_right_N_T.push_back(rightArmTeoRobot[i]);
@@ -283,7 +314,7 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     rightArmBalThread = new BalanceThread(rightArmIEncoders, rightArmICartesianSolver, rightArmIPositionDirect, PT_MODE_MS );
     leftArmBalThread = new BalanceThread(leftArmIEncoders, leftArmICartesianSolver, leftArmIPositionDirect, PT_MODE_MS );
 
-    // start input reading thread: JR3/keyboard
+    // start sending information thread: JR3/keyboard
     this->start();
 
     // start
@@ -325,7 +356,7 @@ bool BalanceTray::threadInit(){
     return true;
 }
 
-/**************** JR3 Thread *************************/
+/**************** Sending Thread *************************/
 
 void BalanceTray::run()
 {    
@@ -347,8 +378,15 @@ void BalanceTray::run()
             else CD_ERROR("Reading JR3\n");
         }
 
-    // reading keyboard (bloqueante: hasta que no se presiona una tecla, no continua la ejecución del hilo)
-        else calculatePointPressingKeyboard(&rdx, &ldx);
+    // reading keyboard
+        else
+        {
+            // if the iteration of the thread is the first, copy the position.
+            // this fixs the warning messages: "KdlVectorConverter.cpp:13 vectorToFrame(): Size mismatch; expected: 6, was: 0"
+            if( this->getIterations()!=0 )
+                calculatePointPressingKeyboard(&rdx, &ldx);
+            else getRefPosition(&rdx,&ldx);
+        }
 
     rightArmBalThread->setCartesianPosition(rdx);
     leftArmBalThread->setCartesianPosition(ldx);
@@ -380,7 +418,7 @@ bool BalanceTray::getLeftArmFwdKin(std::vector<double> *currentX)
     /** ----- Obtain current joint position ----- **/
     std::vector<double> currentQ(numLeftArmJoints);
     if ( ! leftArmIEncoders->getEncoders( currentQ.data() ) ){
-        CD_ERROR("ForgetEncoders failed\n");
+        CD_ERROR("getEncoders failed\n");
         return false;
     }
 
@@ -402,20 +440,6 @@ bool BalanceTray::configArmsToPosition(double sp, double acc){
     std::vector<double> armAccelerations(7, acc); // 7,30.0
 
     // -- Configuring Devices to Position Mode
-
-    if (!rightArmDevice.view(rightArmIPositionControl) ) { // connecting our device with "position control 2" interface (configuring our device: speed, acceleration... and sending joint positions)
-        CD_ERROR("Problems acquiring rightArmIPositionControl interface\n");
-        return false;
-    } else
-        CD_INFO("Acquired rightArmIPositionControl interface\n");
-
-    if (!leftArmDevice.view(leftArmIPositionControl) ) { // connecting our device with "position control 2" interface (configuring our device: speed, acceleration... and sending joint positions)
-        CD_ERROR("Problems acquiring leftArmIPositionControl interface\n");
-        return false;
-    } else
-        CD_INFO("Acquired leftArmIPositionControl interface\n");
-
-
     std::vector<int> rightArmControlModes(numRightArmJoints,VOCAB_CM_POSITION);
     if(! rightArmIControlMode->setControlModes(rightArmControlModes.data())){
         CD_ERROR("Problems setting position control mode of: right-arm\n");
@@ -431,38 +455,46 @@ bool BalanceTray::configArmsToPosition(double sp, double acc){
 
     // -- Configuring speed and acceleration
     if(!rightArmIPositionControl->setRefSpeeds(armSpeeds.data())){
-            CD_ERROR("Problems setting reference speed on right-arm joints.\n");
-            return false;
-        }
-        if(!leftArmIPositionControl->setRefSpeeds(armSpeeds.data())){
-            CD_ERROR("Problems setting reference speed on left-arm joints.\n");
-            return false;
-        }
-        if(!rightArmIPositionControl->setRefAccelerations(armAccelerations.data())){
-            CD_ERROR("Problems setting reference acceleration on right-arm joints.\n");
-            return false;
-        }
-        if(!leftArmIPositionControl->setRefAccelerations(armAccelerations.data())){
-            CD_ERROR("Problems setting reference acceleration on left-arm joints.\n");
-            return false;
-        }
+        CD_ERROR("Problems setting reference speed on right-arm joints.\n");
+        return false;
+    }
+    if(!leftArmIPositionControl->setRefSpeeds(armSpeeds.data())){
+        CD_ERROR("Problems setting reference speed on left-arm joints.\n");
+        return false;
+    }
+    if(!rightArmIPositionControl->setRefAccelerations(armAccelerations.data())){
+        CD_ERROR("Problems setting reference acceleration on right-arm joints.\n");
+        return false;
+    }
+    if(!leftArmIPositionControl->setRefAccelerations(armAccelerations.data())){
+        CD_ERROR("Problems setting reference acceleration on left-arm joints.\n");
+        return false;
+    }
 
     return true;
 }
 
 bool BalanceTray::configArmsToPositionDirect(){
+
         CD_INFO("Configuring drivers to Position Direct...\n");
-        if (!rightArmDevice.view(rightArmIPositionDirect) ) {
-                CD_ERROR("Problems acquiring rightArmIPositionDirect interface\n");
+
+        if(robot=="teo"){ // if we are using the robot, better use PT Mode
+            yarp::os::Bottle val;
+            yarp::os::Bottle & b = val.addList();
+            b.addInt32(PT_MODE_MS);
+
+            if(! rightArmIRemoteVariables->setRemoteVariable("ptModeMs", val)){
+                CD_ERROR("Problems setting ptModeMs remote variable of: right-arm\n");
                 return false;
+            }
+
+            if(! leftArmIRemoteVariables->setRemoteVariable("ptModeMs", val)){
+                CD_ERROR("Problems setting ptModeMs remote variable of: left-arm\n");
+                return false;
+            }
         }
 
-        if (!leftArmDevice.view(leftArmIPositionDirect) ) {
-            CD_ERROR("Problems acquiring leftArmIPositionDirect interface\n");
-            return false;
-        }
-
-
+        // if there is no ptModeMs (=0), it's activate the external reference
         std::vector<int> rightArmControlModes(numRightArmJoints,VOCAB_CM_POSITION_DIRECT);
         if(! rightArmIControlMode->setControlModes(rightArmControlModes.data())){
             CD_ERROR("Problems setting POSITION DIRECT mode of: right-arm\n");
@@ -473,7 +505,8 @@ bool BalanceTray::configArmsToPositionDirect(){
         if(! leftArmIControlMode->setControlModes(leftArmControlModes.data())){
             CD_ERROR("Problems setting POSITION DIRECT mode of: left-arm\n");
             return false;
-        }        
+        }
+
         return true;
 }
 
@@ -481,7 +514,7 @@ bool BalanceTray::configArmsToPositionDirect(){
 
 bool BalanceTray::moveJointsInPosition(std::vector<double> &rightArm, std::vector<double>& leftArm)
 {
-    // -- checking movement done...
+    // -- ing movement done...
     bool doneRight = false;
     bool doneLeft = false;
 
@@ -495,6 +528,7 @@ bool BalanceTray::moveJointsInPosition(std::vector<double> &rightArm, std::vecto
             return false;
     }
 
+    /*
     while(!doneRight)
     {
         yarp::os::Time::delay(0.1);
@@ -507,6 +541,7 @@ bool BalanceTray::moveJointsInPosition(std::vector<double> &rightArm, std::vecto
         leftArmIPositionControl->checkMotionDone(&doneLeft);
         CD_DEBUG("!doneLeft\n");
     }
+    */
 
     return true;
 }
@@ -624,7 +659,7 @@ bool BalanceTray::rotateTrayByTrajectory(int axis, double angle, double duration
 bool BalanceTray::calculatePointFollowingForce(yarp::sig::Vector sensor, std::vector<double> *rdx, std::vector<double> *ldx)
 {
     char plane ='0';
-    double increment;    
+    double increment;
     std::vector<double> rx, rdsx; // right current point, right destination point
     std::vector<double> lx, ldsx; // left current point, left destination point
 
@@ -637,36 +672,21 @@ bool BalanceTray::calculatePointFollowingForce(yarp::sig::Vector sensor, std::ve
     // -- Turning X axis
     if(sensor[13] > +0.8){
         CD_DEBUG_NO_HEADER("Turning (+)X\n");
-        increment+=0.001;
+        increment=0.001;
         plane = 'x';
     }
-    /*
-    if(sensor[13] < -0.8){
-        CD_DEBUG("(-)X\n");
-        increment-=0.001;
-        plane = 'x';
-    }
-    */
 
     if(sensor[19] < -0.8){
         CD_DEBUG_NO_HEADER("(-)X\n");
-        increment-=0.001;
+        increment=-0.001;
         plane = 'x';
     }
-
-    /*
-    if(sensor[19] > +0.8){
-        CD_DEBUG("(+)19\n");
-        increment+=0.001;
-        plane = 'x';
-    }
-    */
 
     // -- Turning Y axis
     if((sensor[17] < -0.8) || (sensor[23] > +0.8))
     {
         CD_DEBUG_NO_HEADER("(-)17 || (-)23\n");
-        increment-=0.001;
+        increment=-0.001;
         plane = 'y';
 
     }
@@ -674,7 +694,7 @@ bool BalanceTray::calculatePointFollowingForce(yarp::sig::Vector sensor, std::ve
     if((sensor[17] > +0.8) || (sensor[23] < -0.8))
     {
         CD_DEBUG_NO_HEADER("(+)17 || (+)23\n");
-        increment+=0.001;
+        increment=0.001;
         plane = 'y';
 
     }
@@ -682,13 +702,13 @@ bool BalanceTray::calculatePointFollowingForce(yarp::sig::Vector sensor, std::ve
     // -- Turning Z axis
     if(sensor[12] < -0.8 && sensor[18] > +0.8 ){
         CD_DEBUG_NO_HEADER("+ Y\n");
-        increment+=0.001;
+        increment=0.001;
         plane = 'z';
     }
 
     if(sensor[12] > +0.8 && sensor[18] < -0.8 ){
         CD_DEBUG_NO_HEADER("- Y\n");
-        increment-=0.001;
+        increment=-0.001;
         plane = 'z';
     }
 
@@ -768,13 +788,13 @@ bool BalanceTray::calculatePointOpposedToForce(yarp::sig::Vector sensor, std::ve
     // -- Turning X axis
     if(sensor[13] > +0.8){
         CD_DEBUG_NO_HEADER("Turning (+)X\n");
-        increment-=0.001*abs(sensor[13]);
+        increment=-0.001*abs(sensor[13]);
         plane = 'x';
     }
 
     if(sensor[19] < -0.8){
         CD_DEBUG_NO_HEADER("(-)X\n");
-        increment+=0.001*abs(sensor[13]);
+        increment=0.001*abs(sensor[13]);
         plane = 'x';
     }
 
@@ -782,14 +802,14 @@ bool BalanceTray::calculatePointOpposedToForce(yarp::sig::Vector sensor, std::ve
     if((sensor[17] < -0.8) || (sensor[23] > +0.8))
     {
         CD_DEBUG_NO_HEADER("(-)17 || (-)23\n");
-        increment+=0.001*abs(sensor[13]);
+        increment=0.001*abs(sensor[13]);
         plane = 'y';
     }
 
     if((sensor[17] > +0.8) || (sensor[23] < -0.8))
     {
         CD_DEBUG_NO_HEADER("(+)17 || (+)23\n");
-        increment-=0.001*abs(sensor[13]);
+        increment=-0.001*abs(sensor[13]);
         plane = 'y';
 
     }
@@ -857,7 +877,7 @@ bool BalanceTray::calculatePointOpposedToForce(yarp::sig::Vector sensor, std::ve
 bool BalanceTray::calculatePointPressingKeyboard(std::vector<double> *rdx, std::vector<double> *ldx){
     int cKey;
     char plane ='0';    
-    double increment= 0.001;
+    //double increment= 0.001;
     std::vector<double> rx, rdsx; // right current point, right destination point
     std::vector<double> lx, ldsx; // left current point, left destination point
 
@@ -880,34 +900,35 @@ bool BalanceTray::calculatePointPressingKeyboard(std::vector<double> *rdx, std::
     case 65:
         printf("Presiono flecha Arriba\n");
         CD_DEBUG_NO_HEADER("+ Y\n");
-        rdsx[4] = rdsx[4] + increment;
-        ldsx[4] = ldsx[4] + increment;
+        rdsx[4] = rdsx[4] + INCREMENT;
+        ldsx[4] = ldsx[4] + INCREMENT;
         break;
 
     case 66:
         printf("Presiono flecha Abajo\n");
         CD_DEBUG_NO_HEADER("- Y\n");
-        rdsx[4] = rdsx[4] - increment;
-        ldsx[4] = ldsx[4] - increment;
+        rdsx[4] = rdsx[4] - INCREMENT;
+        ldsx[4] = ldsx[4] - INCREMENT;
         break;
 
     case 68:
         printf("Presiono flecha izquierda\n");
         CD_DEBUG_NO_HEADER("(-)X\n");
-        rdsx[3] = rdsx[3] - increment;
-        ldsx[3] = ldsx[3] - increment;
+        rdsx[3] = rdsx[3] - INCREMENT;
+        ldsx[3] = ldsx[3] - INCREMENT;
         break;
 
     case 67:
         printf("Presiono flecha derecha\n");
         CD_DEBUG_NO_HEADER("Turning (+)X\n");
-        rdsx[3] = rdsx[3] + increment;
-        ldsx[3] = ldsx[3] + increment;
+        rdsx[3] = rdsx[3] + INCREMENT;
+        ldsx[3] = ldsx[3] + INCREMENT;
         break;
 
     default:
         CD_DEBUG_NO_HEADER("Repose position\n");
         break;
+
     }
 
         // transformation: Axis Angle Scaled -> Axis Angle
@@ -944,6 +965,7 @@ bool BalanceTray::calculatePointPressingKeyboard(std::vector<double> *rdx, std::
 
         return true;
 }
+
 /************ REF POSITIONS *************************/
 
 bool BalanceTray::homePosition(){
@@ -958,6 +980,8 @@ bool BalanceTray::homePosition(){
             CD_ERROR("\n");
             return false;
         }
+        // en sustitución de checkMotionDone que no funciona
+        getchar();
 
         std::vector<double> rightArmFK(6);        
         if(! getRightArmFwdKin(&rightArmFK))
@@ -1051,12 +1075,12 @@ void BalanceTray::printFKinAA(){
 
 void BalanceTray::printJr3(yarp::sig::Vector values)
 {
-    CD_INFO_NO_HEADER("R: ( ");
+    CD_INFO_NO_HEADER("JR3-R: ( ");
     for(int i=12; i<18; i++)
         CD_INFO_NO_HEADER("%f ",values[i]);
     CD_INFO_NO_HEADER(")\n");
 
-    CD_INFO_NO_HEADER("L: ( ");
+    CD_INFO_NO_HEADER("JR3-L: ( ");
     for(int i=18; i<24; i++)
         CD_INFO_NO_HEADER("%f ",values[i]);
     CD_INFO_NO_HEADER(")\n");
