@@ -16,9 +16,9 @@
 
 
 #define DEFAULT_ROBOT "teo" // teo or teoSim
-#define PT_MODE_MS 50.0
-#define INPUT_READING_MS 20.0
-#define INCREMENT 0.0005
+#define PT_MODE_MS 20 // default 50 ms (funciona bien con 25.0)
+#define INPUT_READING_MS 10
+#define INCREMENT 0.00001 // default 0.0001 (funciona bien con 0.00005)
 
 // ini configuration files for kinematic
 #define RIGHTARM_KIN "/usr/local/share/teo-configuration-files/contexts/kinematics/fixedTrunk-rightArm-fetch-kinematics.ini"

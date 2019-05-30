@@ -303,8 +303,9 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
         else CD_SUCCESS("JR3 sensors calibrated\n");
     }
 
-    if(configArmsToPositionDirect())
+    if(configArmsToPositionDirect()) {
         CD_SUCCESS("Configured to Position Direct\n");
+    }
     else {
         CD_ERROR("Configuring drivers to Position Direct\n");
         return false;
@@ -370,7 +371,7 @@ void BalanceTray::run()
                // reading JR3 sensor
                printJr3(sensorValues);
 
-               if(!calculatePointFollowingForce(sensorValues, &rdx, &ldx)){
+               if(!calculatePointOpposedToForce(sensorValues, &rdx, &ldx)){
                    CD_ERROR("Calculating next point\n");
                    return;
                }
@@ -514,7 +515,7 @@ bool BalanceTray::configArmsToPositionDirect(){
 
 bool BalanceTray::moveJointsInPosition(std::vector<double> &rightArm, std::vector<double>& leftArm)
 {
-    // -- ing movement done...
+    // -- checking movement done...
     bool doneRight = false;
     bool doneLeft = false;
 
@@ -786,33 +787,39 @@ bool BalanceTray::calculatePointOpposedToForce(yarp::sig::Vector sensor, std::ve
 
     // calculating position increment
     // -- Turning X axis
+    // aquí se deberán de hacer una serie de reglas:
+    // * para que se cumpla la primera condición, además de valer más de 0.8, deberá ser mayor que el valor del lado opuesto de la bandeja.
+
     if(sensor[13] > +0.8){
         CD_DEBUG_NO_HEADER("Turning (+)X\n");
-        increment=-0.001*abs(sensor[13]);
+        increment=-0.0001*abs(sensor[13]);
         plane = 'x';
     }
 
+    // * igual con este caso
     if(sensor[19] < -0.8){
         CD_DEBUG_NO_HEADER("(-)X\n");
-        increment=0.001*abs(sensor[13]);
+        increment=0.0001*abs(sensor[19]);
         plane = 'x';
     }
 
     // -- Turning Y axis
+    /* Hay que hacer más pruebas con este sentido de giro
     if((sensor[17] < -0.8) || (sensor[23] > +0.8))
     {
         CD_DEBUG_NO_HEADER("(-)17 || (-)23\n");
-        increment=0.001*abs(sensor[13]);
+        increment=0.0001*abs(sensor[17]);
         plane = 'y';
     }
 
     if((sensor[17] > +0.8) || (sensor[23] < -0.8))
     {
         CD_DEBUG_NO_HEADER("(+)17 || (+)23\n");
-        increment=-0.001*abs(sensor[13]);
+        increment=-0.0001*abs(sensor[17]);
         plane = 'y';
 
     }
+    */
 
     // copy current to destination
     rdsx = rx;
@@ -900,29 +907,29 @@ bool BalanceTray::calculatePointPressingKeyboard(std::vector<double> *rdx, std::
     case 65:
         printf("Presiono flecha Arriba\n");
         CD_DEBUG_NO_HEADER("+ Y\n");
-        rdsx[4] = rdsx[4] + INCREMENT;
-        ldsx[4] = ldsx[4] + INCREMENT;
+        rdsx[4] = rdsx[4] + 0.0001;
+        ldsx[4] = ldsx[4] + 0.0001;
         break;
 
     case 66:
         printf("Presiono flecha Abajo\n");
         CD_DEBUG_NO_HEADER("- Y\n");
-        rdsx[4] = rdsx[4] - INCREMENT;
-        ldsx[4] = ldsx[4] - INCREMENT;
+        rdsx[4] = rdsx[4] - 0.0001;
+        ldsx[4] = ldsx[4] - 0.0001;
         break;
 
     case 68:
         printf("Presiono flecha izquierda\n");
         CD_DEBUG_NO_HEADER("(-)X\n");
-        rdsx[3] = rdsx[3] - INCREMENT;
-        ldsx[3] = ldsx[3] - INCREMENT;
+        rdsx[3] = rdsx[3] - 0.0001;
+        ldsx[3] = ldsx[3] - 0.0001;
         break;
 
     case 67:
         printf("Presiono flecha derecha\n");
         CD_DEBUG_NO_HEADER("Turning (+)X\n");
-        rdsx[3] = rdsx[3] + INCREMENT;
-        ldsx[3] = ldsx[3] + INCREMENT;
+        rdsx[3] = rdsx[3] + 0.0001;
+        ldsx[3] = ldsx[3] + 0.0001;
         break;
 
     default:
@@ -949,8 +956,11 @@ bool BalanceTray::calculatePointPressingKeyboard(std::vector<double> *rdx, std::
         }
         CD_DEBUG_NO_HEADER("]\n");
 
-        if(rdsxaa[6]>5 || ldsxaa[6]>5){
-            CD_WARNING("Turning STOP (> 5º)!!\n");
+        if(rdsxaa[6]>6 || ldsxaa[6]>6){
+            CD_WARNING("Turning STOP (> 6º)!!\n");
+            // send to the pointer
+            *rdx = rdsx;
+            *ldx = ldsx;
             return false;
         }
 
