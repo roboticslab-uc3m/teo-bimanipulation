@@ -110,7 +110,6 @@ install:
 before_script:
 
   - cd
-  - cd repos  
   - cd teo-bimanipulation; mkdir build; cd build; cmake ..   
 
 # Compilamos
