@@ -110,7 +110,7 @@ install:
 before_script:
 
   - cd
-  - cd teo-bimanipulation; mkdir build; cd build; cmake ..   
+  - cd roboticslab-uc3m/teo-bimanipulation; mkdir build; cd build; cmake ..   
 
 # Compilamos
 script:
