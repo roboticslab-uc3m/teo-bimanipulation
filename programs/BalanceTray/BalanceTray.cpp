@@ -15,7 +15,7 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     printf("--------------------------------------------------------------\n");
     if (rf.check("help"))
     {
-        printf("BalanceTray options:\n");
+        printf("BalanceTray options:\n");        
         printf("\t--help (this help)\t--from [file.ini]\t--context [path]\n");
         printf("\t--robot: %s [%s]\n",robot.c_str(),DEFAULT_ROBOT);
         printf("\t--jr3: if you want to use jr3 sensors. By default, it works with keyboard\n");
@@ -478,7 +478,7 @@ bool BalanceTray::configArmsToPosition(double sp, double acc){
 bool BalanceTray::configArmsToPositionDirect(){
 
         CD_INFO("Configuring drivers to Position Direct...\n");
-
+        /*
         if(robot=="teo"){ // if we are using the robot, better use PT Mode
             yarp::os::Bottle val;
             yarp::os::Bottle & b = val.addList();
@@ -494,7 +494,7 @@ bool BalanceTray::configArmsToPositionDirect(){
                 return false;
             }
         }
-
+        */
         // if there is no ptModeMs (=0), it's activate the external reference
         std::vector<int> rightArmControlModes(numRightArmJoints,VOCAB_CM_POSITION_DIRECT);
         if(! rightArmIControlMode->setControlModes(rightArmControlModes.data())){
@@ -657,6 +657,7 @@ bool BalanceTray::rotateTrayByTrajectory(int axis, double angle, double duration
     return true;
 }
 
+/*
 bool BalanceTray::calculatePointFollowingForce(yarp::sig::Vector sensor, std::vector<double> *rdx, std::vector<double> *ldx)
 {
     char plane ='0';
@@ -773,7 +774,7 @@ bool BalanceTray::calculatePointFollowingForce(yarp::sig::Vector sensor, std::ve
 
     return true;
 }
-
+*/
 bool BalanceTray::calculatePointOpposedToForce(yarp::sig::Vector sensor, std::vector<double> *rdx, std::vector<double> *ldx){
     char plane ='0';
     double increment;
@@ -790,36 +791,38 @@ bool BalanceTray::calculatePointOpposedToForce(yarp::sig::Vector sensor, std::ve
     // aquí se deberán de hacer una serie de reglas:
     // * para que se cumpla la primera condición, además de valer más de 0.8, deberá ser mayor que el valor del lado opuesto de la bandeja.
 
-    if(sensor[13] > +0.8){
-        CD_DEBUG_NO_HEADER("Turning (+)X\n");
-        increment=-0.0001*abs(sensor[13]);
+    if(sensor[13] > 0.06 && std::abs(sensor[13])>std::abs(sensor[19]) ){
+        CD_WARNING_NO_HEADER("PRESURE DETECTED RIGHT: %f\n", sensor[13]);
+        increment=-0.00018*std::abs(sensor[13]);
         plane = 'x';
     }
 
     // * igual con este caso
-    if(sensor[19] < -0.8){
-        CD_DEBUG_NO_HEADER("(-)X\n");
-        increment=0.0001*abs(sensor[19]);
+
+    else if(sensor[19] < -0.06 && std::abs(sensor[19])>std::abs(sensor[13]) ){
+        CD_WARNING_NO_HEADER("PRESURE DETECTED LEFT: %f\n", sensor[19]);
+        increment=0.00018*std::abs(sensor[19]);
         plane = 'x';
     }
 
     // -- Turning Y axis
-    /* Hay que hacer más pruebas con este sentido de giro
-    if((sensor[17] < -0.8) || (sensor[23] > +0.8))
+    /* Hay que hacer más pruebas con este sentido de giro */
+    if((sensor[17] < -0.08) || (sensor[23] > +0.08))
     {
-        CD_DEBUG_NO_HEADER("(-)17 || (-)23\n");
-        increment=0.0001*abs(sensor[17]);
+        // CD_DEBUG_NO_HEADER("(-)17 || (-)23\n");
+	CD_WARNING_NO_HEADER("PRESURE DETECTED DOWN: [%f][%f]\n", sensor[17], sensor[23]);
+        increment=0.0006*std::abs(sensor[17]);
         plane = 'y';
     }
 
-    if((sensor[17] > +0.8) || (sensor[23] < -0.8))
+    else if((sensor[17] > 0.08) || (sensor[23] < -0.08))
     {
-        CD_DEBUG_NO_HEADER("(+)17 || (+)23\n");
-        increment=-0.0001*abs(sensor[17]);
+        //CD_DEBUG_NO_HEADER("(+)17 || (+)23\n");
+	CD_WARNING_NO_HEADER("PRESURE DETECTED UP: [%f][%f]\n", sensor[17], sensor[23]);
+        increment=-0.0006*std::abs(sensor[17]);
         plane = 'y';
 
     }
-    */
 
     // copy current to destination
     rdsx = rx;
@@ -828,12 +831,14 @@ bool BalanceTray::calculatePointOpposedToForce(yarp::sig::Vector sensor, std::ve
     switch (plane) {
         case 'x':
             // increment rotation value in X axis
-            rdsx[3] = rdsx[3] + increment;
-            ldsx[3] = ldsx[3] + increment;
+            rdsx[3] += increment;
+	    CD_WARNING_NO_HEADER("value X: %f\n", rdsx[3]);
+            ldsx[3] += increment;
             break;
         case 'y':
             // increment rotation value in Y axis
             rdsx[4] = rdsx[4] + increment;
+	    CD_WARNING_NO_HEADER("value Y: %f\n", rdsx[4]);
             ldsx[4] = ldsx[4] + increment;
             break;
         case 'z':
@@ -980,7 +985,7 @@ bool BalanceTray::calculatePointPressingKeyboard(std::vector<double> *rdx, std::
 
 bool BalanceTray::homePosition(){
     // Prepare the last position        
-        CD_INFO("Preparing homming position...\n");
+        CD_INFO("Preparing homing position...\n");
         configArmsToPosition(10,10);
         double rightArmPoss[7] = {-30.0, -25.5,  28.6, -78.7,  57.5, -70.6};
         double leftArmPoss[7]  = {-30.0,  25.5, -28.6, -78.7, -57.5, -70.6};

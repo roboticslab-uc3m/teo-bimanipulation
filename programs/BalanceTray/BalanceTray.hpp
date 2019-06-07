@@ -16,7 +16,7 @@
 
 
 #define DEFAULT_ROBOT "teo" // teo or teoSim
-#define PT_MODE_MS 20 // default 50 ms (funciona bien con 25.0)
+#define PT_MODE_MS 50 // default 50 ms (funciona bien con 25.0)
 #define INPUT_READING_MS 10
 #define INCREMENT 0.00001 // default 0.0001 (funciona bien con 0.00005)
 
