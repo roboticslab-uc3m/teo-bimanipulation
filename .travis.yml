@@ -22,9 +22,20 @@ compiler:
 # compilación en paralelo con diferentes versiones de YARP
 
 env:
+  global:
+    - CACHE_DIR=~/cached-deps
   matrix:
     - YARP_CHECKOUT=master
     - YARP_CHECKOUT=v3.1.1
+    
+matrix:
+  include:
+    - if: type = cron
+      compiler: gcc
+      env: ROBOTOLOGY_CHECKOUT=devel
+    - if: type = cron
+      compiler: clang
+      env: ROBOTOLOGY_CHECKOUT=devel
    
    
 # cache directory 
