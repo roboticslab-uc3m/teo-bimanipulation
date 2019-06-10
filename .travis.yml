@@ -79,6 +79,15 @@ install:
     --repo-url https://github.com/roboticslab-uc3m/color-debug
     --repo-checkout develop
     
+  #-- Install KDL
+  - >
+    source "$TRAVIS_BUILD_DIR/scripts/travis/git-cache-dependency.sh"
+    --package-name KDL
+    --repo-url https://github.com/orocos/orocos_kinematics_dynamics
+    --repo-checkout master
+    --cmake-home-dir orocos_kdl
+    --prepend-to-linker-path lib
+    
   #-- Install kinematics-dynamics (for ICartesianControl)
   - >
     source "$TRAVIS_BUILD_DIR/scripts/travis/git-cache-dependency.sh"
