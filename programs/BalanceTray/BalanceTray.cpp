@@ -157,7 +157,7 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
         CD_INFO("Acquired leftArmIPositionDirect interface\n");
 
     // -- connecting our device with "RemoteVariables" interface
-    /*  This interface is used to test external reference mode (but it's not used)
+    /*  This interface is used to test external reference mode (but it's not used for now)
     if (!leftArmDevice.view(leftArmIRemoteVariables) ) {
         CD_ERROR("Problems acquiring leftArmIRemoteVariables interface\n");
         return false;
@@ -570,8 +570,7 @@ bool BalanceTray::moveJointsInPositionDirect(std::vector<double> &rightArm, std:
 }
 
 /************ EXECUTE TRAJECTORY ********************/
-/* This function are not used by the moment. */
-
+// Offline trajectories : This function are not used by the moment.
 bool BalanceTray::executeTrajectory(std::vector<double> rx, std::vector<double> lx, std::vector<double> rxd, std::vector<double> lxd, double duration, double maxvel)
 {
     // trajectory for right-arm
@@ -667,124 +666,7 @@ bool BalanceTray::rotateTrayByTrajectory(int axis, double angle, double duration
     return true;
 }
 
-/*
-bool BalanceTray::calculatePointFollowingForce(yarp::sig::Vector sensor, std::vector<double> *rdx, std::vector<double> *ldx)
-{
-    char plane ='0';
-    double increment;
-    std::vector<double> rx, rdsx; // right current point, right destination point
-    std::vector<double> lx, ldsx; // left current point, left destination point
-
-    if(!getRefPosition(&rx, &lx)){
-        CD_ERROR("Getting last position\n");
-        return false;
-    }
-
-    // calculating position increment
-    // -- Turning X axis
-    if(sensor[13] > +0.8){
-        CD_DEBUG_NO_HEADER("Turning (+)X\n");
-        increment=0.001;
-        plane = 'x';
-    }
-
-    if(sensor[19] < -0.8){
-        CD_DEBUG_NO_HEADER("(-)X\n");
-        increment=-0.001;
-        plane = 'x';
-    }
-
-    // -- Turning Y axis
-    if((sensor[17] < -0.8) || (sensor[23] > +0.8))
-    {
-        CD_DEBUG_NO_HEADER("(-)17 || (-)23\n");
-        increment=-0.001;
-        plane = 'y';
-
-    }
-
-    if((sensor[17] > +0.8) || (sensor[23] < -0.8))
-    {
-        CD_DEBUG_NO_HEADER("(+)17 || (+)23\n");
-        increment=0.001;
-        plane = 'y';
-
-    }
-
-    // -- Turning Z axis
-    if(sensor[12] < -0.8 && sensor[18] > +0.8 ){
-        CD_DEBUG_NO_HEADER("+ Y\n");
-        increment=0.001;
-        plane = 'z';
-    }
-
-    if(sensor[12] > +0.8 && sensor[18] < -0.8 ){
-        CD_DEBUG_NO_HEADER("- Y\n");
-        increment=-0.001;
-        plane = 'z';
-    }
-
-    // copy current to destination
-    rdsx = rx;
-    ldsx = lx;
-
-    switch (plane) {
-        case 'x':
-            // increment rotation value in X axis
-            rdsx[3] = rdsx[3] + increment;
-            ldsx[3] = ldsx[3] + increment;
-            break;
-        case 'y':
-            // increment rotation value in Y axis
-            rdsx[4] = rdsx[4] + increment;
-            ldsx[4] = ldsx[4] + increment;
-            break;
-        case 'z':
-            // increment rotation value in Y axis
-            rdsx[5] = rdsx[5] + increment;
-            ldsx[5] = ldsx[5] + increment;
-            break;
-        case '0':
-            CD_INFO("Repose position\n");
-            break;
-    }
-
-    // transformation: Axis Angle Scaled -> Axis Angle
-    std::vector<double> rdsxaa, ldsxaa;
-    KinRepresentation::decodePose(rdsx, rdsxaa, KinRepresentation::CARTESIAN, KinRepresentation::AXIS_ANGLE, KinRepresentation::DEGREES );
-    KinRepresentation::decodePose(ldsx, ldsxaa, KinRepresentation::CARTESIAN, KinRepresentation::AXIS_ANGLE, KinRepresentation::DEGREES );
-
-    // Checks the joint limits!
-    CD_DEBUG_NO_HEADER("R-POSS: [");
-    for(int i=0; i<rdsxaa.size(); i++){
-        CD_DEBUG_NO_HEADER("%f ",rdsxaa[i]);
-    }
-    CD_DEBUG_NO_HEADER("]\n");
-
-    CD_DEBUG_NO_HEADER("L-POSS: [");
-    for(int i=0; i<ldsxaa.size(); i++){
-        CD_DEBUG_NO_HEADER("%f ",ldsxaa[i]);
-    }
-    CD_DEBUG_NO_HEADER("]\n");
-
-    if(rdsxaa[6]>5 || ldsxaa[6]>5){
-        CD_WARNING("Turning STOP (> 5º)!!\n");
-        return false;
-    }
-
-
-    if(!setRefPosition(rdsx, ldsx)){
-        CD_ERROR("Saving reference position\n");
-        return false;
-    }
-
-    // send to the pointer
-    *rdx = rdsx;
-    *ldx = ldsx;
-
-    return true;
-}
-*/
+// Online trajectories: Function used to calculate the next point in relation to the force exerted on the sensors (movement opposite to the force to balance the tray)
 bool BalanceTray::calculatePointOpposedToForce(yarp::sig::Vector sensor, std::vector<double> *rdx, std::vector<double> *ldx){
     char plane ='0';
     double increment;

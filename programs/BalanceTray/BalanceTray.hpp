@@ -145,8 +145,7 @@ namespace teo
             /** Moving the tray calculating a trajectory **/
             bool rotateTrayByTrajectory(int axis, double angle, double duration, double maxvel);
 
-            /** calculate next point in relation to the forces read by the sensor **/
-            bool calculatePointFollowingForce(yarp::sig::Vector sensor, std::vector<double> *rdx, std::vector<double> *ldx);
+            /** calculate next point in relation to the forces readed by the sensor or key pressed **/
             bool calculatePointOpposedToForce(yarp::sig::Vector sensor, std::vector<double> *rdx, std::vector<double> *ldx);
             bool calculatePointPressingKeyboard(std::vector<double> *rdx, std::vector<double> *ldx);
 
