@@ -37,10 +37,14 @@ matrix:
       compiler: clang
       env: ROBOTOLOGY_CHECKOUT=devel
    
-   
-# cache directory 
+    
 cache:
   directories: $CACHE_DIR    
+  
+addons:
+  apt:
+    packages:
+    - libeigen3-dev # YARP API
 
 # Tareas a realizar antes de instalacción
 before_install:
