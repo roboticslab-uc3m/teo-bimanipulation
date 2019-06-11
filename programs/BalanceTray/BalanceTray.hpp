@@ -15,13 +15,9 @@
 #include <yarp/os/Semaphore.h>
 
 
-#define DEFAULT_ROBOT "teo" // teo or teoSim
-#define PT_MODE_MS 50 // default 50 ms
+#define DEFAULT_ROBOT "teo" // teo or teoSim (default teo)
+#define PT_MODE_MS 50
 #define INPUT_READING_MS 10
-
-// ini configuration files for kinematic
-#define RIGHTARM_KIN "/usr/local/share/teo-configuration-files/contexts/kinematics/fixedTrunk-rightArm-fetch-kinematics.ini"
-#define LEFTARM_KIN "/usr/local/share/teo-configuration-files/contexts/kinematics/fixedTrunk-leftArm-fetch-kinematics.ini"
 
 using namespace yarp::os;
 using namespace roboticslab;
