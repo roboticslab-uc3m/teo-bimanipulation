@@ -289,11 +289,20 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     rightArmICartesianSolver->appendLink(twist_right_N_T);
     leftArmICartesianSolver->appendLink(twist_left_N_T);
 
+    // ----- Configuring Speech -----
+    dialogueManager = new DialogueManager();
+    dialogueManager->configureTts("spanish");
+    dialogueManager->ttsSay("Demostracion de bandeja iniciada");
+
     // Start operations:
     if(homePosition())
-        CD_SUCCESS("Home position [OK]\n");
+    {
 
-    printFKinAA();
+        CD_SUCCESS("Home position [OK]\n");
+        printFKinAA();
+    }
+
+    dialogueManager->ttsSay("Por favor, coloca la bandeja en mis manos, y cuando este lista, pulsa cualquier tecla para comenzar");
 
     CD_INFO_NO_HEADER("Put the tray and press a Key...\n");
     getchar();

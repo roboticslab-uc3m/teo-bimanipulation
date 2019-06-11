@@ -9,6 +9,7 @@
 #include <ICartesianTrajectory.hpp>
 #include <KdlTrajectory.hpp>
 #include "KinematicRepresentation.hpp"
+#include "DialogueManager.hpp"
 
 #include "TrajectoryThread.hpp"
 #include "BalanceThread.hpp"
@@ -157,8 +158,8 @@ namespace teo
             /** movement finished */
             bool done;
 
-            /** Input port from dialogue manager */
-            yarp::os::RpcServer inDialogPort;
+            /** Dialogue manager */
+            DialogueManager *dialogueManager;
 
             /** Thread run */
             virtual bool threadInit();
