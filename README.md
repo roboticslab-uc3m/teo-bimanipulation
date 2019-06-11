@@ -23,6 +23,4 @@ Application of Teo ballancing balls on a tray using his two arms and his force t
 
 [![Build Status (Linux/OSX)](https://travis-ci.org/roboticslab-uc3m/teo-bimanipulation.svg?branch=develop)](https://travis-ci.org/roboticslab-uc3m/teo-bimanipulation)
 
-[![Coverage Status](https://coveralls.io/repos/roboticslab-uc3m/teo-bimanipulation/badge.svg)](https://coveralls.io/r/roboticslab-uc3m/teo-bimanipulation)
-
 [![Issues](https://img.shields.io/github/issues/roboticslab-uc3m/teo-bimanipulation.svg?label=Issues)](https://github.com/roboticslab-uc3m/teo-bimanipulation/issues)
