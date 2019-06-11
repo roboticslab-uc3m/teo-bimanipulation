@@ -28,7 +28,7 @@ int main(int argc, char **argv) {
 
     yarp::os::ResourceFinder rf;
     rf.setVerbose(true);
-    rf.setDefaultContext("balanceTray");
+    rf.setDefaultContext("kinematics"); // context to find kinematic config files
     rf.configure(argc, argv);
 
     teo::BalanceTray mod;
@@ -36,15 +36,15 @@ int main(int argc, char **argv) {
         return mod.runModule(rf);
     }
 
-    printf("Run \"%s --help\" for options.\n",argv[0]);
-    printf("%s checking for yarp network... ",argv[0]);
+    CD_INFO_NO_HEADER("Run \"%s --help\" for options.\n",argv[0]);
+    CD_INFO_NO_HEADER("%s checking for yarp network... ",argv[0]);
     fflush(stdout);
 
     yarp::os::Network yarp;
     if (!yarp.checkNetwork()) {
         fprintf(stderr,"[fail]\n%s found no yarp network (try running \"yarpserver &\"), bye!\n",argv[0]);
         return 1;
-    } else printf("[ok]\n");
+    } else CD_SUCCESS_NO_HEADER("[ok]\n");
 
 
     return mod.runModule(rf);

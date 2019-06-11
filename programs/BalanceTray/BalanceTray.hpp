@@ -16,7 +16,7 @@
 
 
 #define DEFAULT_ROBOT "teo" // teo or teoSim
-#define PT_MODE_MS 50 // default 50 ms (funciona bien con 25.0)
+#define PT_MODE_MS 50 // default 50 ms
 #define INPUT_READING_MS 10
 
 // ini configuration files for kinematic

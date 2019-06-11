@@ -8,8 +8,7 @@ namespace teo
 /************************************************************************/
 
 bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
-{
-    printf("inicia el configure\n");    
+{   
     robot = rf.check("robot",yarp::os::Value(DEFAULT_ROBOT),"name of /robot to be used").asString();
 
     printf("--------------------------------------------------------------\n");
@@ -51,7 +50,7 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
                 return 1;
             }
 
-        CD_SUCCESS("Acquired JR3 interface\n");
+        CD_SUCCESS("Acquired JR3 interface [ok]\n");
     }
 
     // ------ RIGHT ARM -------
@@ -186,8 +185,8 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
         }
 
     yarp::os::Property rightArmSolverOptions;
-    rightArmSolverOptions.fromConfigFile(RIGHTARM_KIN);
-    //rightArmSolverOptions.fromConfigFile("fixedTrunk-rightArm-fetch-kinematics.ini");
+    std::string rightKinPath = rf.findFileByName("fixedTrunk-rightArm-fetch-kinematics.ini");;
+    rightArmSolverOptions.fromConfigFile(rightKinPath);
     rightArmSolverOptions.put("device","KdlSolver");
     //rightArmSolverOptions.put("maxIter", 1000); // iterator configuration
     //rightArmSolverOptions.put("eps", 1e-9); // precision
@@ -229,8 +228,9 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
             CD_INFO_NO_HEADER("Joint %d limits: [%f,%f]\n",joint,min,max);
         }
 
-    yarp::os::Property leftArmSolverOptions;
-    leftArmSolverOptions.fromConfigFile(LEFTARM_KIN);
+    yarp::os::Property leftArmSolverOptions;    
+    std::string leftKinPath = rf.findFileByName("fixedTrunk-leftArm-fetch-kinematics.ini");;
+    leftArmSolverOptions.fromConfigFile(leftKinPath);
     leftArmSolverOptions.put("device", "KdlSolver");
     leftArmSolverOptions.put("mins", yarp::os::Value::makeList(qlMin.toString().c_str()));
     leftArmSolverOptions.put("maxs", yarp::os::Value::makeList(qlMax.toString().c_str()));
@@ -887,8 +887,6 @@ bool BalanceTray::homePosition(){
             CD_ERROR("\n");
             return false;
         }
-        // en sustitución de checkMotionDone que no funciona
-        getchar();
 
         std::vector<double> rightArmFK(6);        
         if(! getRightArmFwdKin(&rightArmFK))
