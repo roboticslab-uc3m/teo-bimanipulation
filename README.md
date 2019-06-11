@@ -8,7 +8,7 @@ Demostration of Teo ballancing balls on a tray using his two arms and his force 
 
 #### Posting Issues
 
-1. Read [CONTRIBUTING.md](https://github.com/roboticslab-uc3m/teo-bimanipulation/blob/master/CONTRIBUTING.md)
+1. Read [CONTRIBUTING.md](https://github.com/roboticslab-uc3m/teo-bimanipulation/blob/develop/CONTRIBUTING.md)
 2. [Post an issue / Feature request / Specific documentation request](https://github.com/roboticslab-uc3m/teo-bimanipulation/issues)
 
 #### Fork & Pull Request
