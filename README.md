@@ -1,8 +1,8 @@
 # Teo-bimanipulation
-Demostration of Teo manipulating a tray with two arms (Press image to see a [video](https://youtu.be/Cdr-XTdyZNA) about the state of development)
+Demostration of Teo ballancing balls on a tray using his two arms and his force torque sensors (Press image to see a [video](https://youtu.be/hzQrKVqFxTk) about the state of development)
  
  
- [![IMAGE ALT TEXT](http://i3.ytimg.com/vi/X3zJ8DxNW7I/maxresdefault.jpg)](https://www.youtube.com/watch?v=Cdr-XTdyZNA "TEO-Bimanipulation robot demo: a humanoid robot manipulating a tray")
+ [![IMAGE ALT TEXT](http://i3.ytimg.com/vi/X3zJ8DxNW7I/maxresdefault.jpg)](https://www.youtube.com/watch?v=hzQrKVqFxTk "TEO bimanipulation demo: a humanoid robot ballancing balls on a tray using force torque sensors")
  
 ## Contributing
 
