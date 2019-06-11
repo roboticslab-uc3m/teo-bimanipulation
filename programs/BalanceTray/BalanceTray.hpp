@@ -1,5 +1,6 @@
 // -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*-
 
+#include "StaticLibrary.hpp"
 #include <yarp/os/all.h>
 #include <yarp/dev/all.h>
 #include <yarp/dev/IAnalogSensor.h>
@@ -14,9 +15,9 @@
 #include <yarp/os/Semaphore.h>
 
 
-#define DEFAULT_ROBOT "/teo" // teo or teoSim
-#define PT_MODE_MS 50.0
-#define JR3_READING_MS 20.0
+#define DEFAULT_ROBOT "teo" // teo or teoSim (default teo)
+#define PT_MODE_MS 50
+#define INPUT_READING_MS 10
 
 using namespace yarp::os;
 using namespace roboticslab;
@@ -33,10 +34,16 @@ namespace teo
    class BalanceTray : public yarp::os::RFModule, public yarp::os::RateThread
     {        
         public:
-        BalanceTray() :  yarp::os::RateThread(JR3_READING_MS) {} // constructor
+        BalanceTray() :  yarp::os::RateThread(INPUT_READING_MS) {} // constructor
         virtual bool configure(yarp::os::ResourceFinder &rf);
 
         private:
+
+            /** robot used (teo/teoSim) **/
+            std::string robot;
+
+            /** control mode: jr3/keyboard **/
+            bool useJr3;
 
             /** RFModule interruptModule. */
             virtual bool interruptModule();
@@ -53,13 +60,16 @@ namespace teo
             /** Encoders **/
             yarp::dev::IEncoders *rightArmIEncoders;
             /** Right Arm ControlMode2 Interface */
-            yarp::dev::IControlMode2 *rightArmIControlMode2;
+            yarp::dev::IControlMode *rightArmIControlMode;
             /** Right Arm PositionControl2 Interface */
-            yarp::dev::IPositionControl2 *rightArmIPositionControl2;
+            yarp::dev::IPositionControl *rightArmIPositionControl;
             /** Right Arm PositionDirect Interface */
             yarp::dev::IPositionDirect *rightArmIPositionDirect;
             /** Right Arm ControlLimits2 Interface */
             yarp::dev::IControlLimits *rightArmIControlLimits;
+            /** Right Arm RemoteVariables **/
+            yarp::dev::IRemoteVariables *rightArmIRemoteVariables;
+
             /** Solver device **/
             yarp::dev::PolyDriver rightArmSolverDevice;
             ICartesianSolver *rightArmICartesianSolver;
@@ -78,13 +88,16 @@ namespace teo
             /** Encoders **/
             yarp::dev::IEncoders *leftArmIEncoders;
             /** Left Arm ControlMode2 Interface */
-            yarp::dev::IControlMode2 *leftArmIControlMode2;
+            yarp::dev::IControlMode *leftArmIControlMode;
             /** Left Arm PositionControl2 Interface */
-            yarp::dev::IPositionControl2 *leftArmIPositionControl2;
+            yarp::dev::IPositionControl *leftArmIPositionControl;
             /** Left Arm PositionDirect Interface */
             yarp::dev::IPositionDirect *leftArmIPositionDirect;
             /** Left Arm ControlLimits2 Interface */
             yarp::dev::IControlLimits *leftArmIControlLimits;
+            /** Left Arm RemoteVariables **/
+            yarp::dev::IRemoteVariables *leftArmIRemoteVariables;
+
             /** Solver device **/
             yarp::dev::PolyDriver leftArmSolverDevice;
             ICartesianSolver *leftArmICartesianSolver;
@@ -128,9 +141,10 @@ namespace teo
             /** Moving the tray calculating a trajectory **/
             bool rotateTrayByTrajectory(int axis, double angle, double duration, double maxvel);
 
-            /** calculate next point in relation to the forces read by the sensor **/
-            bool calculatePointFollowingForce(yarp::sig::Vector sensor, std::vector<double> *rdx, std::vector<double> *ldx);
-            bool calculatePointOpposingForce(yarp::sig::Vector sensor, std::vector<double> *rdx, std::vector<double> *ldx);
+            /** calculate next point in relation to the forces readed by the sensor or key pressed **/
+            bool calculatePointOpposedToForce(yarp::sig::Vector sensor, std::vector<double> *rdx, std::vector<double> *ldx);
+            bool calculatePointPressingKeyboard(std::vector<double> *rdx, std::vector<double> *ldx);
+
 
             /** Check movements functions */
             void checkLinearlyMovement();

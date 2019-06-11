@@ -1,14 +1,14 @@
 # Teo-bimanipulation
-Demostration of Teo manipulating a tray with two arms (Press image to see a [video](https://youtu.be/Cdr-XTdyZNA) about the state of development)
+Application of Teo ballancing balls on a tray using his two arms and his force torque sensors (Press image to see a [video](https://youtu.be/hzQrKVqFxTk))
  
  
- [![IMAGE ALT TEXT](http://i3.ytimg.com/vi/X3zJ8DxNW7I/maxresdefault.jpg)](https://www.youtube.com/watch?v=Cdr-XTdyZNA "TEO-Bimanipulation robot demo: a humanoid robot manipulating a tray")
+ [![IMAGE ALT TEXT](http://i3.ytimg.com/vi/X3zJ8DxNW7I/maxresdefault.jpg)](https://www.youtube.com/watch?v=hzQrKVqFxTk "TEO bimanipulation demo: a humanoid robot ballancing balls on a tray using force torque sensors")
  
 ## Contributing
 
 #### Posting Issues
 
-1. Read [CONTRIBUTING.md](https://github.com/roboticslab-uc3m/teo-bimanipulation/blob/master/CONTRIBUTING.md)
+1. Read [CONTRIBUTING.md](https://github.com/roboticslab-uc3m/teo-bimanipulation/blob/develop/CONTRIBUTING.md)
 2. [Post an issue / Feature request / Specific documentation request](https://github.com/roboticslab-uc3m/teo-bimanipulation/issues)
 
 #### Fork & Pull Request

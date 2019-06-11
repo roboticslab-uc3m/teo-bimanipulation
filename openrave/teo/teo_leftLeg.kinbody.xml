@@ -22,8 +22,8 @@
 	<Body>r60</Body>
 	<offsetfrom>r60</offsetfrom>
 	<weight>1.0</weight>
-	<limitsdeg>-36.3 29.1</limitsdeg>
-	<axis>0 0 -1</axis>
+	<limitsdeg>-32.8 27.9</limitsdeg>
+	<axis>0 0 1</axis>
 	<maxvel>30</maxvel>
 	<resolution>1</resolution>
 	</Joint>
@@ -45,8 +45,8 @@
 	<Body>r61</Body>
 	<offsetfrom>r61</offsetfrom>
 	<weight>1.0</weight>
-	<limitsdeg>-12.5 12.5</limitsdeg>
-	<axis>-1 0 0</axis>
+	<limitsdeg>-14.2 12.5</limitsdeg>
+	<axis>1 0 0</axis>
 	<maxvel>30</maxvel>
 	<resolution>1</resolution>
 	</Joint>
@@ -69,7 +69,7 @@
 	<Body>r62</Body>
 	<offsetfrom>r62</offsetfrom>
 	<weight>1.0</weight>
-	<limitsdeg>-31.6 39.1</limitsdeg>
+	<limitsdeg>-31.6 42.3</limitsdeg>
 	<axis>0 1 0</axis>
 	<maxvel>30</maxvel>
 	<resolution>1</resolution>
@@ -93,7 +93,7 @@
 	<Body>r63</Body>
 	<offsetfrom>r63</offsetfrom>
 	<weight>1.0</weight>
-	<limitsdeg>-58.4 71.1</limitsdeg>
+	<limitsdeg>-61.3 82.4</limitsdeg>
 	<axis>0 1 0</axis>
 	<maxvel>30</maxvel>
 	<resolution>1</resolution>
@@ -128,7 +128,7 @@
 	<Body>r64</Body>
 	<offsetfrom>r64</offsetfrom>
 	<weight>1.0</weight>
-	<limitsdeg>-25.4 18.9</limitsdeg>
+	<limitsdeg>-23.1 25.4</limitsdeg>
 	<axis>0 1 0</axis>
 	<maxvel>30</maxvel>
 	<resolution>1</resolution>
@@ -150,7 +150,7 @@
 	<Body>r65</Body>
 	<offsetfrom>r65</offsetfrom>
 	<weight>1.0</weight>
-	<limitsdeg>-25.6 19.2</limitsdeg>
+	<limitsdeg>-19.9 42.5</limitsdeg>
 	<axis>1 0 0</axis>
 	<maxvel>30</maxvel>
 	<resolution>1</resolution>
