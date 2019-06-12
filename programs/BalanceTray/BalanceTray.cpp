@@ -10,6 +10,8 @@ namespace teo
 bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
 {   
     robot = rf.check("robot",yarp::os::Value(DEFAULT_ROBOT),"name of /robot to be used").asString();
+    rdsxaa.resize(7);
+    ldsxaa.resize(7);
 
     printf("--------------------------------------------------------------\n");
     if (rf.check("help"))
@@ -325,6 +327,8 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
         return false;
     }
 
+    dialogueManager->ttsSay("Sensores de fuerza par calibrados. Que comience el juego");
+
     // Initialice threads of arms
     rightArmBalThread = new BalanceThread(rightArmIEncoders, rightArmICartesianSolver, rightArmIPositionDirect, PT_MODE_MS );
     leftArmBalThread = new BalanceThread(leftArmIEncoders, leftArmICartesianSolver, leftArmIPositionDirect, PT_MODE_MS );
@@ -355,15 +359,14 @@ bool BalanceTray::interruptModule()
 
 double BalanceTray::getPeriod()
 {
-    return 4.0; // Fixed, in seconds, the slow thread that calls updateModule below
+    return 10.0; // Fixed, in seconds, the slow thread that calls updateModule below
 }
 
 /************************************************************************/
 
 bool BalanceTray::updateModule()
 {
-   //printf("Entered updateModule...\n");
-   return true;
+   dialogueManager->talkTrayStatus(sensorValues,rdsxaa,ldsxaa);
 }
 
 /************************************************************************/
@@ -678,7 +681,7 @@ bool BalanceTray::rotateTrayByTrajectory(int axis, double angle, double duration
 // Online trajectories: Function used to calculate the next point in relation to the force exerted on the sensors (movement opposite to the force to balance the tray)
 bool BalanceTray::calculatePointOpposedToForce(yarp::sig::Vector sensor, std::vector<double> *rdx, std::vector<double> *ldx){
     char plane ='0';
-    double increment;
+    double increment = 0;
     std::vector<double> rx, rdsx; // right current point, right destination point
     std::vector<double> lx, ldsx; // left current point, left destination point
 
@@ -693,7 +696,7 @@ bool BalanceTray::calculatePointOpposedToForce(yarp::sig::Vector sensor, std::ve
 
     if(sensor[13] > 0.06 && std::abs(sensor[13])>std::abs(sensor[19]) ){
         CD_WARNING_NO_HEADER("PRESURE DETECTED RIGHT: %f\n", sensor[13]);
-        increment=-0.00018*std::abs(sensor[13]); // increment value of the distance between points
+        increment=-0.00016*std::abs(sensor[13]); // increment value of the distance between points
         plane = 'x';
     }
 
@@ -702,7 +705,7 @@ bool BalanceTray::calculatePointOpposedToForce(yarp::sig::Vector sensor, std::ve
 
     else if(sensor[19] < -0.06 && std::abs(sensor[19])>std::abs(sensor[13]) ){
         CD_WARNING_NO_HEADER("PRESURE DETECTED LEFT: %f\n", sensor[19]);
-        increment=0.00018*std::abs(sensor[19]); // increment value of the distance between points
+        increment=0.00016*std::abs(sensor[19]); // increment value of the distance between points
         plane = 'x';
     }
 
@@ -711,7 +714,7 @@ bool BalanceTray::calculatePointOpposedToForce(yarp::sig::Vector sensor, std::ve
     if((sensor[17] < -0.08) || (sensor[23] > +0.08))
     {
         CD_WARNING_NO_HEADER("PRESURE DETECTED DOWN: [%f][%f]\n", sensor[17], sensor[23]);
-        increment=0.0006*std::abs(sensor[17]);// increment value of the distance between points
+        increment=0.0007*std::abs(sensor[17]);// increment value of the distance between points
         plane = 'y';
     }
 
@@ -720,7 +723,7 @@ bool BalanceTray::calculatePointOpposedToForce(yarp::sig::Vector sensor, std::ve
     else if((sensor[17] > 0.08) || (sensor[23] < -0.08))
     {
         CD_WARNING_NO_HEADER("PRESURE DETECTED UP: [%f][%f]\n", sensor[17], sensor[23]);
-        increment=-0.0006*std::abs(sensor[17]); // increment value of the distance between points
+        increment=-0.0007*std::abs(sensor[17]); // increment value of the distance between points
         plane = 'y';
 
     }
@@ -734,13 +737,13 @@ bool BalanceTray::calculatePointOpposedToForce(yarp::sig::Vector sensor, std::ve
             // increment rotation value in X axis
             rdsx[3] += increment;            
             ldsx[3] += increment;
-            CD_WARNING_NO_HEADER("turning value of X: right [%f] left [%f]\n", rdsx[3], ldsx[3]);
+            CD_WARNING_NO_HEADER("turning value of X: F[right: %f] F[left: %f]\n", rdsx[3], ldsx[3]);
             break;
         case 'y':
             // increment rotation value in Y axis
-            rdsx[4] = rdsx[4] + increment;	   
-            ldsx[4] = ldsx[4] + increment;
-            CD_WARNING_NO_HEADER("turning value of Y: right [%f] left [%f]\n", rdsx[4], ldsx[4]);
+            rdsx[4] += increment;
+            ldsx[4] += increment;
+            CD_WARNING_NO_HEADER("turning value of Y: M[right %f] M[left %f]\n", rdsx[4], ldsx[4]);
             break;
 
         /* Not used by the moment
@@ -756,7 +759,7 @@ bool BalanceTray::calculatePointOpposedToForce(yarp::sig::Vector sensor, std::ve
     }
 
     // transformation: Axis Angle Scaled -> Axis Angle
-    std::vector<double> rdsxaa, ldsxaa;
+    //std::vector<double> rdsxaa, ldsxaa; -> global
     KinRepresentation::decodePose(rdsx, rdsxaa, KinRepresentation::CARTESIAN, KinRepresentation::AXIS_ANGLE, KinRepresentation::DEGREES );
     KinRepresentation::decodePose(ldsx, ldsxaa, KinRepresentation::CARTESIAN, KinRepresentation::AXIS_ANGLE, KinRepresentation::DEGREES );
 
@@ -845,7 +848,6 @@ bool BalanceTray::calculatePointPressingKeyboard(std::vector<double> *rdx, std::
     }
 
         // transformation: Axis Angle Scaled -> Axis Angle
-        std::vector<double> rdsxaa, ldsxaa;
         KinRepresentation::decodePose(rdsx, rdsxaa, KinRepresentation::CARTESIAN, KinRepresentation::AXIS_ANGLE, KinRepresentation::DEGREES );
         KinRepresentation::decodePose(ldsx, ldsxaa, KinRepresentation::CARTESIAN, KinRepresentation::AXIS_ANGLE, KinRepresentation::DEGREES );
 

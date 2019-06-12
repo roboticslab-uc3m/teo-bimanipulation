@@ -38,6 +38,10 @@ namespace teo
         BalanceTray() :  yarp::os::RateThread(INPUT_READING_MS) {} // constructor
         virtual bool configure(yarp::os::ResourceFinder &rf);
 
+        /** current vector position of the tray centroid **/
+        std::vector<double> rdsxaa;
+        std::vector<double> ldsxaa;
+
         private:
 
             /** robot used (teo/teoSim) **/
@@ -119,11 +123,7 @@ namespace teo
             std::vector<double>  leftArmRefpos;            
             bool setRefPosition(std::vector<double> rx, std::vector<double> lx);
             bool getRefPosition(std::vector<double> *rx, std::vector<double> *lx);
-            std::vector<double> rightArmHomepos;
-            std::vector<double>  leftArmHomepos;
             bool homePosition(); // initial pos
-            bool setHomePosition(std::vector<double> rx, std::vector<double> lx);
-            bool getHomePosition(std::vector<double> *rx, std::vector<double> *lx);
 
             /****** FUNCTIONS ******/            
 
@@ -157,6 +157,8 @@ namespace teo
 
             /** movement finished */
             bool done;
+
+
 
             /** Dialogue manager */
             DialogueManager *dialogueManager;
