@@ -21,10 +21,11 @@ namespace teo
 class DialogueManager
 {
     public:
-      DialogueManager(){}
+
+    // constructor
+      DialogueManager(std::string language);
 
       void talkTrayStatus(yarp::sig::Vector sensor, std::vector<double> rdsxaa, std::vector<double> ldsxaa);
-      bool configureTts(std::string language);
       void ttsSay(std::string sayString);
 
     private:

@@ -50,6 +50,9 @@ namespace teo
             /** control mode: jr3/keyboard **/
             bool useJr3;
 
+            /** with speech **/
+            bool speak;
+
             /** RFModule interruptModule. */
             virtual bool interruptModule();
             /** RFModule getPeriod. */

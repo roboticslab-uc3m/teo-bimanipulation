@@ -7,7 +7,7 @@ namespace teo
 
 /************************************************************************/
 
-bool DialogueManager::configureTts(std::string language) {
+DialogueManager::DialogueManager(std::string language) {
 
     outTtsPort.open("/balanceTray/tts/rpc:c");
 
@@ -60,7 +60,6 @@ bool DialogueManager::configureTts(std::string language) {
     else
     {
         printf("Language not found. Please use '--language english' or '--language spanish'");
-        return false;
     }
 }
 
