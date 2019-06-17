@@ -30,6 +30,7 @@ class DialogueManager
 
     private:
         yarp::os::RpcClient outTtsPort; // tts port
+        int sentence;
 
 };
 

@@ -374,7 +374,7 @@ bool BalanceTray::interruptModule()
 
 double BalanceTray::getPeriod()
 {
-    return 10.0; // Fixed, in seconds, the slow thread that calls updateModule below
+    return 15.0; // Fixed, in seconds, the slow thread that calls updateModule below
 }
 
 /************************************************************************/
@@ -382,6 +382,7 @@ double BalanceTray::getPeriod()
 bool BalanceTray::updateModule()
 {
    if (speak) dialogueManager->talkTrayStatus(sensorValues,rdsxaa,ldsxaa);
+   return true;
 }
 
 /************************************************************************/
@@ -710,7 +711,7 @@ bool BalanceTray::calculatePointOpposedToForce(yarp::sig::Vector sensor, std::ve
     //    for the first condition, the force of the object on the RIGHT sensor must be greater than 0.06 and must be greater than the absolute value of the opposite side of the tray.
 
     if(sensor[13] > 0.06 && std::abs(sensor[13])>std::abs(sensor[19]) ){
-        CD_WARNING_NO_HEADER("PRESURE DETECTED RIGHT: %f\n", sensor[13]);
+        CD_WARNING_NO_HEADER("PRESURE DETECTED RIGHT: [%f]>[%f]\n", sensor[13], sensor[19]);
         increment=-0.00016*std::abs(sensor[13]); // increment value of the distance between points
         plane = 'x';
     }
@@ -719,14 +720,14 @@ bool BalanceTray::calculatePointOpposedToForce(yarp::sig::Vector sensor, std::ve
     //    for the second condition, the force of the object on the LEFT sensor must be less than -0.6 and must be greater than the absolute value of the opposite side of the tray.
 
     else if(sensor[19] < -0.06 && std::abs(sensor[19])>std::abs(sensor[13]) ){
-        CD_WARNING_NO_HEADER("PRESURE DETECTED LEFT: %f\n", sensor[19]);
+        CD_WARNING_NO_HEADER("PRESURE DETECTED LEFT: [%f]<[%f]\n", sensor[13], sensor[19]);
         increment=0.00016*std::abs(sensor[19]); // increment value of the distance between points
         plane = 'x';
     }
 
     // -- Turning Y axis (positive value)
     //    for the first condition, the torsional force of the object on the RIGHT sensor and LEFT sensor must be less than -0.08 and greater than 0.08 respectively
-    if((sensor[17] < -0.08) || (sensor[23] > +0.08))
+    if((sensor[17] < -0.07) || (sensor[23] > +0.07))
     {
         CD_WARNING_NO_HEADER("PRESURE DETECTED DOWN: [%f][%f]\n", sensor[17], sensor[23]);
         increment=0.0007*std::abs(sensor[17]);// increment value of the distance between points
@@ -735,7 +736,7 @@ bool BalanceTray::calculatePointOpposedToForce(yarp::sig::Vector sensor, std::ve
 
     // -- Turning Y axis (negative value)
     //    for the second condition, the torsional force of the object on the RIGHT sensor and LEFT sensor must be greater than 0.08 and less than -0.08 respectively
-    else if((sensor[17] > 0.08) || (sensor[23] < -0.08))
+    else if((sensor[17] > 0.07) || (sensor[23] < -0.07))
     {
         CD_WARNING_NO_HEADER("PRESURE DETECTED UP: [%f][%f]\n", sensor[17], sensor[23]);
         increment=-0.0007*std::abs(sensor[17]); // increment value of the distance between points
