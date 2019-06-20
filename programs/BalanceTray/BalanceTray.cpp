@@ -273,8 +273,8 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     double rightArmTeoSim[] = {1.73545231e-03, -3.80284497e-04, 2.28085790e-01, 1.57115675e+00, 9.19705112e-02, 8.01720722e-02};
     double leftArmTeoSim[]  = {1.73545231e-03,  3.80284497e-04, 2.28085790e-01,-1.57115675e+00, 9.19705112e-02,-8.01720722e-02};
     // -- teo    
-    double rightArmTeoRobot[] = {-2.19253955e-03, 5.17492742e-04, 2.27558963e-01, 1.56637737e+00, 7.62154203e-02, 9.11379407e-02}; //right
-    double leftArmTeoRobot[]  = {-1.94606925e-03,-1.34022884e-03, 2.26174230e-01,-1.56272379e+00, 7.85987985e-02,-9.15834717e-02}; //left
+    double rightArmTeoRobot[] = {-3.47946146e-03, 1.80942075e-04, 2.28993589e-01, 1.56922560e+00, 2.77594895e-02, 5.15844922e-02}; //right
+    double leftArmTeoRobot[]  = {-0.00332034, -0.00249526,  0.22617789, -1.55904518,  0.02679647, -0.04939248}; //left
 
     std::vector<double> twist_right_N_T;
     std::vector<double> twist_left_N_T;
@@ -712,7 +712,7 @@ bool BalanceTray::calculatePointOpposedToForce(yarp::sig::Vector sensor, std::ve
 
     if(sensor[13] > 0.06 && std::abs(sensor[13])>std::abs(sensor[19]) ){
         CD_WARNING_NO_HEADER("PRESURE DETECTED RIGHT: [%f]>[%f]\n", sensor[13], sensor[19]);
-        increment=-0.00016*std::abs(sensor[13]); // increment value of the distance between points
+        increment=-0.00014*std::abs(sensor[13]); // increment value of the distance between points
         plane = 'x';
     }
 
@@ -721,7 +721,7 @@ bool BalanceTray::calculatePointOpposedToForce(yarp::sig::Vector sensor, std::ve
 
     else if(sensor[19] < -0.06 && std::abs(sensor[19])>std::abs(sensor[13]) ){
         CD_WARNING_NO_HEADER("PRESURE DETECTED LEFT: [%f]<[%f]\n", sensor[13], sensor[19]);
-        increment=0.00016*std::abs(sensor[19]); // increment value of the distance between points
+        increment=0.00014*std::abs(sensor[19]); // increment value of the distance between points
         plane = 'x';
     }
 
@@ -730,7 +730,7 @@ bool BalanceTray::calculatePointOpposedToForce(yarp::sig::Vector sensor, std::ve
     if((sensor[17] < -0.07) || (sensor[23] > +0.07))
     {
         CD_WARNING_NO_HEADER("PRESURE DETECTED DOWN: [%f][%f]\n", sensor[17], sensor[23]);
-        increment=0.0007*std::abs(sensor[17]);// increment value of the distance between points
+        increment=0.0005*(std::abs(sensor[17])+std::abs(sensor[23]));// increment value of the distance between points
         plane = 'y';
     }
 
@@ -739,7 +739,7 @@ bool BalanceTray::calculatePointOpposedToForce(yarp::sig::Vector sensor, std::ve
     else if((sensor[17] > 0.07) || (sensor[23] < -0.07))
     {
         CD_WARNING_NO_HEADER("PRESURE DETECTED UP: [%f][%f]\n", sensor[17], sensor[23]);
-        increment=-0.0007*std::abs(sensor[17]); // increment value of the distance between points
+        increment=-0.0005*(std::abs(sensor[17])+std::abs(sensor[23])); // increment value of the distance between points
         plane = 'y';
 
     }
@@ -906,8 +906,8 @@ bool BalanceTray::homePosition(){
     // Prepare the last position        
         CD_INFO("Preparing homing position...\n");
         configArmsToPosition(10,10);
-        double rightArmPoss[7] = {-30.0, -25.5,  28.6, -78.7,  57.5, -70.6};
-        double leftArmPoss[7]  = {-30.0,  25.5, -28.6, -78.7, -57.5, -70.6};
+        double rightArmPoss[7] = {-27.0, -25.5,  28.6, -78.7,  57.5, -70.6};
+        double leftArmPoss[7]  = {-27.0,  25.5, -28.6, -78.7, -57.5, -70.6};
         std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+7); //teoSim (+6) teo (+7)
         std::vector<double> leftArm(&leftArmPoss[0], &leftArmPoss[0]+7);
         if(!moveJointsInPosition(rightArm, leftArm)){
