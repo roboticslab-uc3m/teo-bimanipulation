@@ -17,6 +17,7 @@
 
 
 #define DEFAULT_ROBOT "teo" // teo or teoSim (default teo)
+#define DEFAULT_MODE "keyboard"
 #define PT_MODE_MS 50
 #define INPUT_READING_MS 10
 
@@ -48,10 +49,16 @@ namespace teo
             std::string robot;
 
             /** control mode: jr3/keyboard **/
-            bool useJr3;
+            bool balanceJr3;
+            bool testJr3;
+            bool keyboard;
+
 
             /** with speech **/
             bool speak;
+
+            /** Operating mode: jr3Balance / keyboard / jr3Check2Csv **/
+            std::string mode;
 
             /** RFModule interruptModule. */
             virtual bool interruptModule();
@@ -132,6 +139,8 @@ namespace teo
 
             /** Execute trajectory using a thread and KdlTrajectory**/
             bool executeTrajectory(std::vector<double> rx, std::vector<double> lx, std::vector<double> rxd, std::vector<double> lxd, double duration, double maxvel);
+            bool rotateTrayByTrajectory(int axis, double angle, double duration, double maxvel);
+            bool passJr3ValuesToCsv();
 
             /** Configure functions **/
             bool configArmsToPosition(double sp, double acc);
@@ -141,9 +150,6 @@ namespace teo
             bool moveJointsInPosition(std::vector<double> &rightArm, std::vector<double>& leftArm);
             bool moveJointsInPositionDirect(std::vector<double> &rightArm, std::vector<double> &leftArm);
 
-
-            /** Moving the tray calculating a trajectory **/
-            bool rotateTrayByTrajectory(int axis, double angle, double duration, double maxvel);
 
             /** calculate next point in relation to the forces readed by the sensor or key pressed **/
             bool calculatePointOpposedToForce(yarp::sig::Vector sensor, std::vector<double> *rdx, std::vector<double> *ldx);

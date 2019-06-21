@@ -10,6 +10,7 @@ namespace teo
 bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
 {   
     robot = rf.check("robot",yarp::os::Value(DEFAULT_ROBOT),"name of /robot to be used").asString();
+    mode = rf.check("mode",yarp::os::Value(DEFAULT_MODE),"the /mode to be used").asString();
     rdsxaa.resize(7);
     ldsxaa.resize(7);
 
@@ -19,23 +20,38 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
         printf("BalanceTray options:\n");        
         printf("\t--help (this help)\t--from [file.ini]\t--context [path]\n");
         printf("\t--robot: %s [%s]\n",robot.c_str(),DEFAULT_ROBOT);
-        printf("\t--jr3: if you want to use jr3 sensors. By default, it works with keyboard to do tests\n");
+        printf("\t--mode: %s [%s] (select: jr3Balance / keyboard / jr3Test2Csv )\n", mode.c_str(), DEFAULT_MODE);
         printf("\t--speak \n""");
         ::exit(0);
     }
 
-    // checking control mode:
-    useJr3 = false;
+    // operation modes
+    balanceJr3 = false;
+    keyboard   = false;
+    testJr3    = false;
 
     // speak sentences
     speak = false;
 
-    if(rf.check("jr3"))
+    if(mode == "jr3Balance")
     {
-        CD_INFO_NO_HEADER("Mode JR3 [activated]\n");
-        useJr3 = true;
+        CD_INFO_NO_HEADER("Mode JR3 with balance tray [activated]\n");
+        balanceJr3 = true;
     }
-    else CD_INFO_NO_HEADER("Mode KEYBOARD [activated] by default\n");
+    else if(mode == "keyboard")
+    {
+        CD_INFO_NO_HEADER("Mode KEYBOARD [activated]\n");
+        keyboard = true;
+    }
+    else if(mode == "jr3Test2Csv")
+    {
+        CD_INFO_NO_HEADER("Mode test positions and JR3 values to CSV file [activated]\n");
+        testJr3 = true;
+    }
+    else {
+        CD_ERROR_NO_HEADER("no mode recognised to work\n");
+        return false;
+    }
 
     if(rf.check("speak"))
     {
@@ -44,10 +60,11 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     }
     else CD_INFO_NO_HEADER("Mode SPEAK [deactivated]\n");
 
+
     std::string balanceTrayStr("/balanceTray");
 
     // ------ ANALOG SENSOR ------   
-    if(useJr3){
+    if(balanceJr3 || testJr3){
         yarp::os::Property options;
             options.put("device","Jr3");
 
@@ -270,8 +287,8 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     // ** Unify TCP of right-arm and left-arm: apppending link to the tray's centroid
     /** Transformation matrix between the gripper and the tray **/
     // -- teoSim:     
-    double rightArmTeoSim[] = {1.73545231e-03, -3.80284497e-04, 2.28085790e-01, 1.57115675e+00, 9.19705112e-02, 8.01720722e-02};
-    double leftArmTeoSim[]  = {1.73545231e-03,  3.80284497e-04, 2.28085790e-01,-1.57115675e+00, 9.19705112e-02,-8.01720722e-02};
+    double rightArmTeoSim[] = {1.73545231e-03, -3.80284497e-04, 2.28085790e-01, 1.57220542e+00, 5.08799928e-02, 3.90038185e-02};
+    double leftArmTeoSim[]  = {1.73545231e-03,  3.80284497e-04, 2.28085790e-01,-1.57220542e+00, 5.08799928e-02,-3.90038185e-02};
     // -- teo    
     double rightArmTeoRobot[] = {-3.47946146e-03, 1.80942075e-04, 2.28993589e-01, 1.56922560e+00, 2.77594895e-02, 5.15844922e-02}; //right
     double leftArmTeoRobot[]  = {-0.00332034, -0.00249526,  0.22617789, -1.55904518,  0.02679647, -0.04939248}; //left
@@ -279,14 +296,14 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     std::vector<double> twist_right_N_T;
     std::vector<double> twist_left_N_T;
 
-    if(DEFAULT_ROBOT=="teoSim"){
+    if(robot=="teoSim"){
         for(int i; i<6; i++)
             twist_right_N_T.push_back(rightArmTeoSim[i]);
         for(int i; i<6; i++)
             twist_left_N_T.push_back(leftArmTeoSim[i]);
         CD_SUCCESS("\n");
     }
-    else if(DEFAULT_ROBOT=="teo")
+    else if(robot=="teo")
     {
         for(int i; i<6; i++)
             twist_right_N_T.push_back(rightArmTeoRobot[i]);
@@ -312,7 +329,6 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     // Start operations:
     if(homePosition())
     {
-
         CD_SUCCESS("Home position [OK]\n");
         printFKinAA();
     }
@@ -323,13 +339,15 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     getchar();
 
     // Calibrate sensor ... JR3
-    if(useJr3){
-        int ret = iAnalogSensor->calibrateSensor();
+    if(balanceJr3 || testJr3){
+        CD_INFO("\n");
+        int ret = iAnalogSensor->calibrateSensor();        
         if(ret!=0){
             CD_ERROR("Calibrating sensors...\n");
             return false;
         }
         else CD_SUCCESS("JR3 sensors calibrated\n");
+        CD_INFO("\n");
     }
 
     if (speak) dialogueManager->ttsSay("un momento por favor");
@@ -344,16 +362,41 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
 
     if (speak) dialogueManager->ttsSay("Sensores de fuerza par calibrados. Que comience el juego");
 
-    // Initialice threads of arms
-    rightArmBalThread = new BalanceThread(rightArmIEncoders, rightArmICartesianSolver, rightArmIPositionDirect, PT_MODE_MS );
-    leftArmBalThread = new BalanceThread(leftArmIEncoders, leftArmICartesianSolver, leftArmIPositionDirect, PT_MODE_MS );
+    if(testJr3) // we are going to create a offline saved trajectories to test the jr3 sensors
+    {
+       CD_DEBUG("\n");
+       // axis, angle, duration, maxvel
+       rotateTrayByTrajectory(0,0.1,10,10);
+       yarp::os::Time::delay(0.5);
+       rotateTrayByTrajectory(0,-0.1,10,10);
+       yarp::os::Time::delay(0.5);
+       rotateTrayByTrajectory(0,-0.1,10,10);
+       yarp::os::Time::delay(0.5);
+       rotateTrayByTrajectory(0,0.1,10,10);
+       yarp::os::Time::delay(0.5);
+       rotateTrayByTrajectory(1,0.1,10,10);
+       yarp::os::Time::delay(0.5);
+       rotateTrayByTrajectory(1,-0.1,10,10);
+       yarp::os::Time::delay(0.5);
+       rotateTrayByTrajectory(1,-0.1,10,10);
+       yarp::os::Time::delay(0.5);
+       rotateTrayByTrajectory(1,0.1,10,10);
+       yarp::os::Time::delay(0.5);
+    }
 
-    // start reading and sending information thread: JR3/keyboard (10ms) -> BalanceThread (50ms)
-    this->start();
+    else{
 
-    // start BalanceThread
-    rightArmBalThread->start();
-    leftArmBalThread->start();
+        // Initialice threads of arms
+        rightArmBalThread = new BalanceThread(rightArmIEncoders, rightArmICartesianSolver, rightArmIPositionDirect, PT_MODE_MS );
+        leftArmBalThread = new BalanceThread(leftArmIEncoders, leftArmICartesianSolver, leftArmIPositionDirect, PT_MODE_MS );
+
+        // start reading and sending information thread: JR3/keyboard (10ms) -> BalanceThread (50ms)
+        this->start();
+
+        // start BalanceThread
+        rightArmBalThread->start();
+        leftArmBalThread->start();
+    }
 
     return true;
 }
@@ -399,7 +442,7 @@ void BalanceTray::run()
     std::vector<double> rdx, ldx;
 
     // sensor reading
-        if(useJr3){
+        if(balanceJr3){
             int ret = iAnalogSensor->read(sensorValues);
             if (ret == yarp::dev::IAnalogSensor::AS_OK)
             {
@@ -643,6 +686,7 @@ bool BalanceTray::executeTrajectory(std::vector<double> rx, std::vector<double> 
 
     if (rightArmTrajThread->isSuspended() && leftArmTrajThread->isSuspended())
     {
+        CD_INFO("Vuelve a resetearse\n");
         rightArmTrajThread->resetTime();
         leftArmTrajThread->resetTime();
         rightArmTrajThread->resume();
@@ -809,7 +853,7 @@ bool BalanceTray::calculatePointOpposedToForce(yarp::sig::Vector sensor, std::ve
     return true;
 }
 
-// -- test function
+// -- test functions
 bool BalanceTray::calculatePointPressingKeyboard(std::vector<double> *rdx, std::vector<double> *ldx){
     int cKey;
     char plane ='0';
@@ -822,8 +866,7 @@ bool BalanceTray::calculatePointPressingKeyboard(std::vector<double> *rdx, std::
         CD_ERROR("Getting last position\n");
         return false;
     }
-    else
-        CD_SUCCESS("Got reference position\n");
+    else CD_SUCCESS("Got reference position\n");
 
     // Read the keyboard
     cKey = StaticLibrary::getch();
