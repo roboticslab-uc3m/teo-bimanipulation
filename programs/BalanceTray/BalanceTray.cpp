@@ -33,6 +33,10 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     // speak sentences
     speak = false;
 
+    // initialice variables
+    rightArmTrajThread = 0;
+    leftArmTrajThread = 0;
+
     if(mode == "jr3Balance")
     {
         CD_INFO_NO_HEADER("Mode JR3 with balance tray [activated]\n");
@@ -74,6 +78,7 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
               yarp::os::Network::fini();
               return 1;
         }
+
 
         if (!jr3card.view(iAnalogSensor) )
             {
@@ -364,24 +369,13 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
 
     if(testJr3) // we are going to create a offline saved trajectories to test the jr3 sensors
     {
-       CD_DEBUG("\n");
-       // axis, angle, duration, maxvel
-       rotateTrayByTrajectory(0,0.1,10,10);
-       yarp::os::Time::delay(0.5);
-       rotateTrayByTrajectory(0,-0.1,10,10);
-       yarp::os::Time::delay(0.5);
-       rotateTrayByTrajectory(0,-0.1,10,10);
-       yarp::os::Time::delay(0.5);
-       rotateTrayByTrajectory(0,0.1,10,10);
-       yarp::os::Time::delay(0.5);
-       rotateTrayByTrajectory(1,0.1,10,10);
-       yarp::os::Time::delay(0.5);
-       rotateTrayByTrajectory(1,-0.1,10,10);
-       yarp::os::Time::delay(0.5);
-       rotateTrayByTrajectory(1,-0.1,10,10);
-       yarp::os::Time::delay(0.5);
-       rotateTrayByTrajectory(1,0.1,10,10);
-       yarp::os::Time::delay(0.5);
+       double increment = PI/180; // 1 degree = 0,0174533 rad
+       for(int i=1; i<=5; i++){ // menos de 5º
+            CD_INFO_NO_HEADER("Rotate tray: (%f) rad / (%i) degrees\n", increment*i, i); // max value: increment*i = 0.1
+            // axis, angle, duration, maxvel
+            rotateTrayByTrajectory(0,increment,5,10);
+            yarp::os::Time::delay(1);
+       }
     }
 
     else{

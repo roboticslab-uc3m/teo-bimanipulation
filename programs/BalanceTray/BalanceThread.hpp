@@ -9,6 +9,8 @@
 #include <ConfigurationSelector.hpp>
 #include <ICartesianTrajectory.hpp>
 
+#define PI 3.141592654
+
 class BalanceThread : public yarp::os::RateThread
 {
 public:
