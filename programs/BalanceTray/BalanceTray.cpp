@@ -2,6 +2,8 @@
 
 #include "BalanceTray.hpp"
 
+#include <algorithm>
+
 namespace teo
 {
 
@@ -20,7 +22,7 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
         printf("BalanceTray options:\n");        
         printf("\t--help (this help)\t--from [file.ini]\t--context [path]\n");
         printf("\t--robot: %s [%s]\n",robot.c_str(),DEFAULT_ROBOT);
-        printf("\t--mode: %s [%s] (select: jr3Balance / keyboard / jr3Test2Csv )\n", mode.c_str(), DEFAULT_MODE);
+        printf("\t--mode: %s [%s] (select: jr3Balance / keyboard / jr3ToCsv )\n", mode.c_str(), DEFAULT_MODE);
         printf("\t--speak \n""");
         ::exit(0);
     }
@@ -28,7 +30,7 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     // operation modes
     balanceJr3 = false;
     keyboard   = false;
-    testJr3    = false;
+    jr3ToCsv    = false;
 
     // speak sentences
     speak = false;
@@ -47,10 +49,10 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
         CD_INFO_NO_HEADER("Mode KEYBOARD [activated]\n");
         keyboard = true;
     }
-    else if(mode == "jr3Test2Csv")
+    else if(mode == "jr3ToCsv")
     {
         CD_INFO_NO_HEADER("Mode test positions and JR3 values to CSV file [activated]\n");
-        testJr3 = true;
+        jr3ToCsv = true;
     }
     else {
         CD_ERROR_NO_HEADER("no mode recognised to work\n");
@@ -68,7 +70,7 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     std::string balanceTrayStr("/balanceTray");
 
     // ------ ANALOG SENSOR ------   
-    if(balanceJr3 || testJr3){
+    if(balanceJr3 || jr3ToCsv){
         yarp::os::Property options;
             options.put("device","Jr3");
 
@@ -344,7 +346,7 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     getchar();
 
     // Calibrate sensor ... JR3
-    if(balanceJr3 || testJr3){
+    if(balanceJr3 || jr3ToCsv){
         CD_INFO("\n");
         int ret = iAnalogSensor->calibrateSensor();        
         if(ret!=0){
@@ -367,30 +369,32 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
 
     if (speak) dialogueManager->ttsSay("Sensores de fuerza par calibrados. Que comience el juego");
 
-    if(testJr3) // we are going to create a offline saved trajectories to test the jr3 sensors
+    // start reading and sending information thread: JR3/keyboard (10ms) -> BalanceThread (50ms)
+    this->start();
+
+    if(jr3ToCsv) // we are going to create a offline saved trajectories to test the jr3 sensors
     {
        double increment = PI/180; // 1 degree = 0,0174533 rad
        for(int i=1; i<=5; i++){ // menos de 5º
-            CD_INFO_NO_HEADER("Rotate tray: (%f) rad / (%i) degrees\n", increment*i, i); // max value: increment*i = 0.1
+            CD_INFO_NO_HEADER("Rotate tray: (%f) rad / (%i) degrees\n", increment*i, i); // max value: increment*i = 0.1            
             // axis, angle, duration, maxvel
             rotateTrayByTrajectory(0,increment,5,10);
             yarp::os::Time::delay(1);
-       }
+       }              
     }
 
-    else{
+    else
+    {
 
         // Initialice threads of arms
         rightArmBalThread = new BalanceThread(rightArmIEncoders, rightArmICartesianSolver, rightArmIPositionDirect, PT_MODE_MS );
         leftArmBalThread = new BalanceThread(leftArmIEncoders, leftArmICartesianSolver, leftArmIPositionDirect, PT_MODE_MS );
 
-        // start reading and sending information thread: JR3/keyboard (10ms) -> BalanceThread (50ms)
-        this->start();
-
         // start BalanceThread
         rightArmBalThread->start();
         leftArmBalThread->start();
     }
+
 
     return true;
 }
@@ -425,6 +429,7 @@ bool BalanceTray::updateModule()
 /************************************************************************/
 
 bool BalanceTray::threadInit(){
+    initTime = Time::now();
     sensorValues.zero();
     return true;
 }
@@ -436,19 +441,37 @@ void BalanceTray::run()
     std::vector<double> rdx, ldx;
 
     // sensor reading
-        if(balanceJr3){
+        if(balanceJr3 || jr3ToCsv){
             int ret = iAnalogSensor->read(sensorValues);
-            if (ret == yarp::dev::IAnalogSensor::AS_OK)
+            if(ret!=yarp::dev::IAnalogSensor::AS_OK)
             {
-               // reading JR3 sensor
-               printJr3(sensorValues);
-
-               if(!calculatePointOpposedToForce(sensorValues, &rdx, &ldx)){
-                   CD_ERROR("Calculating next point\n");
-                   return;
-               }
+                CD_ERROR("Reading JR3\n");
+                return;
             }
-            else CD_ERROR("Reading JR3\n");
+            else
+                if(balanceJr3)
+                {
+                    // reading JR3 sensor
+                    printJr3(sensorValues);
+
+                    if(!calculatePointOpposedToForce(sensorValues, &rdx, &ldx)){
+                        CD_ERROR("Calculating next point\n");
+                        return;
+                    }
+                }
+            else
+                if(jr3ToCsv)
+                {
+                    std::vector<double> axisRotation;
+                    if(!getAxisRotation(&axisRotation))
+                    {
+                        CD_ERROR("Getting tray rotation\n");
+                        return;
+                    }
+                    writeInfo2Csv(Time::now()-initTime, axisRotation, sensorValues);
+                    return;
+                }
+
         }
 
     // reading keyboard
@@ -680,7 +703,6 @@ bool BalanceTray::executeTrajectory(std::vector<double> rx, std::vector<double> 
 
     if (rightArmTrajThread->isSuspended() && leftArmTrajThread->isSuspended())
     {
-        CD_INFO("Vuelve a resetearse\n");
         rightArmTrajThread->resetTime();
         leftArmTrajThread->resetTime();
         rightArmTrajThread->resume();
@@ -1037,6 +1059,35 @@ void BalanceTray::printJr3(yarp::sig::Vector values)
     for(int i=18; i<24; i++)
         CD_INFO_NO_HEADER("%f ",values[i]);
     CD_INFO_NO_HEADER(")\n");
+}
+
+/************** GET rotation information *****************/
+
+bool BalanceTray::getAxisRotation(std::vector<double> *axisRotation){
+    std::vector<double> rightArmPoint(6);
+    if(! getRightArmFwdKin(&rightArmPoint))
+        CD_ERROR("Doing Forward Kinematic of right-arm...\n");
+
+    std::vector<double> rightArmPointInAxisAngle(7); // axis angle
+    KinRepresentation::decodePose(rightArmPoint, rightArmPointInAxisAngle, KinRepresentation::CARTESIAN, KinRepresentation::AXIS_ANGLE, KinRepresentation::DEGREES );
+
+    axisRotation->resize(4);
+    std::copy(rightArmPointInAxisAngle.begin() + 3, rightArmPointInAxisAngle.end(), axisRotation->begin());
+    /*
+    for(std::vector<double>::iterator it = axisRotation->begin(); it != axisRotation->end(); ++it)
+        printf("%f ",*it);
+    printf("]\n");
+    */
+    return true;
+}
+
+/************** Write information in CSV file ***************/
+
+bool BalanceTray::writeInfo2Csv(double timeStamp, std::vector<double> axisRotation, yarp::sig::Vector jr3Values)
+{
+    CD_WARNING_NO_HEADER("%f ", timeStamp);
+    CD_WARNING_NO_HEADER("%f %f %f %f ", axisRotation[0], axisRotation[1], axisRotation[2], axisRotation[3]); // axis rotation
+    CD_WARNING_NO_HEADER("%f %f\n", jr3Values[13], jr3Values[19]); // +y -y
 }
 
 }  // namespace teo

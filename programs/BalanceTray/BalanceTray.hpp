@@ -50,7 +50,7 @@ namespace teo
 
             /** control mode: jr3/keyboard **/
             bool balanceJr3;
-            bool testJr3;
+            bool jr3ToCsv;
             bool keyboard;
 
 
@@ -159,6 +159,12 @@ namespace teo
             /** Check movements functions */
             void checkLinearlyMovement();
 
+            /** Get axis rotation of the tray **/
+            bool getAxisRotation(std::vector<double> *axisRotation);
+
+            /** Write information in CSV file **/
+            bool writeInfo2Csv(double timeStamp, std::vector<double> axisRotation, yarp::sig::Vector jr3Values);
+
             /** Show information **/
             void printFKinAAS();
             void printFKinAA();
@@ -167,7 +173,8 @@ namespace teo
             /** movement finished */
             bool done;
 
-
+            /** Current time **/
+            double initTime;
 
             /** Dialogue manager */
             DialogueManager *dialogueManager;
