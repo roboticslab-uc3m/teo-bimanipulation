@@ -38,6 +38,7 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     // initialice variables
     rightArmTrajThread = 0;
     leftArmTrajThread = 0;
+    fp = 0;
 
     if(mode == "jr3Balance")
     {
@@ -373,14 +374,33 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     this->start();
 
     if(jr3ToCsv) // we are going to create a offline saved trajectories to test the jr3 sensors
-    {
+    {       
+       fp = fopen("../data.csv","w+");
+       fprintf(fp, "time, axis_x, axis_y, axis_z, rotation angle, right_jr3_+y, left_jr3_-y\n");
        double increment = PI/180; // 1 degree = 0,0174533 rad
+
        for(int i=1; i<=5; i++){ // menos de 5º
-            CD_INFO_NO_HEADER("Rotate tray: (%f) rad / (%i) degrees\n", increment*i, i); // max value: increment*i = 0.1            
+            //CD_INFO_NO_HEADER("Rotate tray: (%f) rad / (%i) degrees\n", increment*i, i); // max value: increment*i = 0.1
             // axis, angle, duration, maxvel
-            rotateTrayByTrajectory(0,increment,5,10);
-            yarp::os::Time::delay(1);
-       }              
+            rotateTrayByTrajectory(0,increment,3,10);
+            yarp::os::Time::delay(0.5);
+       }
+
+       for(int i=1; i<=10; i++){ // menos de 5º
+            //CD_INFO_NO_HEADER("Rotate tray: (%f) rad / (%i) degrees\n", increment*i, i); // max value: increment*i = 0.1
+            // axis, angle, duration, maxvel
+            rotateTrayByTrajectory(0,-increment,3,10);
+            yarp::os::Time::delay(0.5);
+       }
+
+       for(int i=1; i<=5; i++){ // menos de 5º
+            //CD_INFO_NO_HEADER("Rotate tray: (%f) rad / (%i) degrees\n", increment*i, i); // max value: increment*i = 0.1
+            // axis, angle, duration, maxvel
+            rotateTrayByTrajectory(0,increment,3,10);
+            yarp::os::Time::delay(0.5);
+       }
+
+
     }
 
     else
@@ -1085,9 +1105,12 @@ bool BalanceTray::getAxisRotation(std::vector<double> *axisRotation){
 
 bool BalanceTray::writeInfo2Csv(double timeStamp, std::vector<double> axisRotation, yarp::sig::Vector jr3Values)
 {
-    CD_WARNING_NO_HEADER("%f ", timeStamp);
-    CD_WARNING_NO_HEADER("%f %f %f %f ", axisRotation[0], axisRotation[1], axisRotation[2], axisRotation[3]); // axis rotation
-    CD_WARNING_NO_HEADER("%f %f\n", jr3Values[13], jr3Values[19]); // +y -y
+    CD_WARNING_NO_HEADER("%.4f ", timeStamp);
+    CD_WARNING_NO_HEADER("%.4f %.4f %.4f %.4f ", axisRotation[0], axisRotation[1], axisRotation[2], axisRotation[3]); // axis rotation
+    CD_WARNING_NO_HEADER("%.4f %.4f\n", jr3Values[13], jr3Values[19]); // +y -y
+    fprintf(fp,"%.4f, ", timeStamp);
+    fprintf(fp,"%.4f, %.4f, %.4f, %.4f, ", axisRotation[0], axisRotation[1], axisRotation[2], axisRotation[3]); // axis rotation
+    fprintf(fp,"%.4f, %.4f\n", jr3Values[13], jr3Values[19]); // +y -y
 }
 
 }  // namespace teo

@@ -163,6 +163,7 @@ namespace teo
             bool getAxisRotation(std::vector<double> *axisRotation);
 
             /** Write information in CSV file **/
+            FILE *fp;
             bool writeInfo2Csv(double timeStamp, std::vector<double> axisRotation, yarp::sig::Vector jr3Values);
 
             /** Show information **/
