@@ -5,6 +5,7 @@
 
 #include <yarp/dev/IEncoders.h>
 #include <yarp/dev/IPositionDirect.h>
+#include <yarp/dev/IPositionControl.h>
 #include "ICartesianSolver.h"
 #include <ConfigurationSelector.hpp>
 #include <ICartesianTrajectory.hpp>
@@ -17,11 +18,13 @@ public:
     BalanceThread(yarp::dev::IEncoders *iEncoders,                  
                   roboticslab::ICartesianSolver *iCartesianSolver,
                   yarp::dev::IPositionDirect *iPositionDirect,
+                  //yarp::dev::IPositionControl *iPosition,
                   int period)
         : yarp::os::RateThread(period),
           iEncoders(iEncoders),
-          iCartesianSolver(iCartesianSolver),
+          iCartesianSolver(iCartesianSolver),          
           iPositionDirect(iPositionDirect),
+          //iPosition(iPosition),
           axes(0)
     {}
 
@@ -49,6 +52,7 @@ private:
     yarp::dev::IEncoders *iEncoders;    
     roboticslab::ICartesianSolver *iCartesianSolver;
     yarp::dev::IPositionDirect *iPositionDirect;
+    //yarp::dev::IPositionControl *iPosition;
     std::vector<double> position;
     int axes;
 };

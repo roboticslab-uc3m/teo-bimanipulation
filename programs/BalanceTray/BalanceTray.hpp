@@ -49,9 +49,10 @@ namespace teo
             std::string robot;
 
             /** control mode: jr3/keyboard **/
-            bool balanceJr3;
-            bool jr3ToCsv;
+            bool jr3Balance;
+            bool testMov;
             bool keyboard;
+            bool jr3ToCsv;
 
 
             /** with speech **/
@@ -165,6 +166,8 @@ namespace teo
             /** Write information in CSV file **/
             FILE *fp;
             bool writeInfo2Csv(double timeStamp, std::vector<double> axisRotation, yarp::sig::Vector jr3Values);
+            // ireration
+            int i;
 
             /** Show information **/
             void printFKinAAS();

@@ -22,42 +22,53 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
         printf("BalanceTray options:\n");        
         printf("\t--help (this help)\t--from [file.ini]\t--context [path]\n");
         printf("\t--robot: %s [%s]\n",robot.c_str(),DEFAULT_ROBOT);
-        printf("\t--mode: %s [%s] (select: jr3Balance / keyboard / jr3ToCsv )\n", mode.c_str(), DEFAULT_MODE);
+        printf("\t--mode: %s [%s] (select: jr3Balance / keyboard / testMov )\n", mode.c_str(), DEFAULT_MODE);
+        printf("\t--jr3ToCsv: to export data read by JR3 sensors\n");
         printf("\t--speak \n""");
         ::exit(0);
     }
 
     // operation modes
-    balanceJr3 = false;
+    jr3Balance = false;
     keyboard   = false;
-    jr3ToCsv    = false;
+    testMov    = false;
+    jr3ToCsv   = false;
 
     // speak sentences
     speak = false;
 
     // initialice variables
-    rightArmTrajThread = 0;
-    leftArmTrajThread = 0;
-    fp = 0;
+    //rightArmTrajThread = 0;
+    //leftArmTrajThread = 0;
+    //fp = 0;
 
+    /** Configure different MODES of the application **/
     if(mode == "jr3Balance")
     {
         CD_INFO_NO_HEADER("Mode JR3 with balance tray [activated]\n");
-        balanceJr3 = true;
+        jr3Balance = true;
     }
     else if(mode == "keyboard")
     {
         CD_INFO_NO_HEADER("Mode KEYBOARD [activated]\n");
         keyboard = true;
     }
-    else if(mode == "jr3ToCsv")
+    else if(mode == "testMov")
     {
-        CD_INFO_NO_HEADER("Mode test positions and JR3 values to CSV file [activated]\n");
-        jr3ToCsv = true;
+        CD_INFO_NO_HEADER("Mode TESTMOV with defined trajectories [activated]\n");
+        testMov = true;
     }
     else {
-        CD_ERROR_NO_HEADER("no mode recognised to work\n");
+        CD_ERROR_NO_HEADER("MODE not recognised to work\n");
         return false;
+    }
+
+    // checks options: speak & jr3ToCsv
+
+    if(rf.check("jr3ToCsv"))
+    {
+        CD_INFO_NO_HEADER("Mode JR3TOCSV [activated]\n");
+        jr3ToCsv = true;
     }
 
     if(rf.check("speak"))
@@ -71,7 +82,7 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     std::string balanceTrayStr("/balanceTray");
 
     // ------ ANALOG SENSOR ------   
-    if(balanceJr3 || jr3ToCsv){
+    if(jr3Balance || jr3ToCsv){
         yarp::os::Property options;
             options.put("device","Jr3");
 
@@ -116,6 +127,7 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
         CD_INFO("Acquired leftArmIEncoders interface\n");
         if(!rightArmIEncoders->getAxes(&numRightArmJoints))
             CD_ERROR("Problems acquiring numRightArmJoints\n");
+        else CD_WARNING("number of joints: %d\n", numRightArmJoints);
     }
 
     // connecting our device with "control mode" interface, initializing which control mode we want (position)
@@ -343,11 +355,11 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
 
     if (speak) dialogueManager->ttsSay("Por favor, coloca la bandeja en mis manos, y cuando este lista, pulsa cualquier tecla para comenzar");
 
-    CD_INFO_NO_HEADER("Put the tray and press a Key...\n");
+    CD_WARNING_NO_HEADER("Press a key to CALIBRATE SENSORS ..\n");
     getchar();
 
     // Calibrate sensor ... JR3
-    if(balanceJr3 || jr3ToCsv){
+    if(jr3Balance || jr3ToCsv){
         CD_INFO("\n");
         int ret = iAnalogSensor->calibrateSensor();        
         if(ret!=0){
@@ -357,6 +369,9 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
         else CD_SUCCESS("JR3 sensors calibrated\n");
         CD_INFO("\n");
     }
+
+    CD_WARNING_NO_HEADER("Put the tray or and object and press a Key...\n");
+    getchar();
 
     if (speak) dialogueManager->ttsSay("un momento por favor");
 
@@ -374,35 +389,41 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     this->start();
 
     if(jr3ToCsv) // we are going to create a offline saved trajectories to test the jr3 sensors
-    {       
+    {
        fp = fopen("../data.csv","w+");
-       fprintf(fp, "time, axis_x, axis_y, axis_z, rotation angle, right_jr3_+y, left_jr3_-y\n");
-       double increment = PI/180; // 1 degree = 0,0174533 rad
+       fprintf(fp, "time, iteration, axis_x, axis_y, axis_z, rotation angle, rfx, rfy, rfz, rmx, rmy, rmz, lfx, lfy, lfz, lmx, lmy, lmz\n");       
+    }
 
-       for(int i=1; i<=5; i++){ // menos de 5º
-            //CD_INFO_NO_HEADER("Rotate tray: (%f) rad / (%i) degrees\n", increment*i, i); // max value: increment*i = 0.1
+    if(testMov)
+    {
+       double increment = (PI/180); // 1 degree = 0,0174533 rad
+
+       //rotateTrayByTrajectory(0,increment,1,10);
+
+       for(i=1; i<=5; i++){ // menos de 5º
+            printf("-> Iteration: %d\n", i);
             // axis, angle, duration, maxvel
-            rotateTrayByTrajectory(0,increment,3,10);
-            yarp::os::Time::delay(0.5);
+            rotateTrayByTrajectory(0,increment,2,10);
+            yarp::os::Time::delay(4);
        }
 
-       for(int i=1; i<=10; i++){ // menos de 5º
-            //CD_INFO_NO_HEADER("Rotate tray: (%f) rad / (%i) degrees\n", increment*i, i); // max value: increment*i = 0.1
+       for(i=4; i>=-5; i--){ // menos de 5º
+            printf("-> Iteration: %d\n", i);
             // axis, angle, duration, maxvel
-            rotateTrayByTrajectory(0,-increment,3,10);
-            yarp::os::Time::delay(0.5);
+            rotateTrayByTrajectory(0,-increment,2,10);
+            yarp::os::Time::delay(4);
        }
 
-       for(int i=1; i<=5; i++){ // menos de 5º
-            //CD_INFO_NO_HEADER("Rotate tray: (%f) rad / (%i) degrees\n", increment*i, i); // max value: increment*i = 0.1
+       for(i=-4; i<=0; i++){ // menos de 5º
+            printf("-> Iteration: %d\n", i);
             // axis, angle, duration, maxvel
-            rotateTrayByTrajectory(0,increment,3,10);
-            yarp::os::Time::delay(0.5);
+            rotateTrayByTrajectory(0,increment,2,10);
+            yarp::os::Time::delay(4);
        }
-
 
     }
 
+    // else: mode keyboard/jr3Balance
     else
     {
 
@@ -461,51 +482,53 @@ void BalanceTray::run()
     std::vector<double> rdx, ldx;
 
     // sensor reading
-        if(balanceJr3 || jr3ToCsv){
+        if(jr3Balance || jr3ToCsv){
             int ret = iAnalogSensor->read(sensorValues);
             if(ret!=yarp::dev::IAnalogSensor::AS_OK)
             {
                 CD_ERROR("Reading JR3\n");
                 return;
             }
-            else
-                if(balanceJr3)
-                {
-                    // reading JR3 sensor
-                    printJr3(sensorValues);
-
-                    if(!calculatePointOpposedToForce(sensorValues, &rdx, &ldx)){
-                        CD_ERROR("Calculating next point\n");
-                        return;
-                    }
-                }
-            else
-                if(jr3ToCsv)
-                {
-                    std::vector<double> axisRotation;
-                    if(!getAxisRotation(&axisRotation))
-                    {
-                        CD_ERROR("Getting tray rotation\n");
-                        return;
-                    }
-                    writeInfo2Csv(Time::now()-initTime, axisRotation, sensorValues);
-                    return;
-                }
-
         }
 
-    // reading keyboard
-        else
+        if(jr3ToCsv)
+        {
+            std::vector<double> axisRotation;
+            if(!getAxisRotation(&axisRotation))
+            {
+                CD_ERROR("Getting tray rotation\n");
+                return;
+            }
+            writeInfo2Csv(Time::now()-initTime, axisRotation, sensorValues);
+        }
+
+        if(jr3Balance)
+        {
+            // reading JR3 sensor
+            printJr3(sensorValues);
+
+            if(!calculatePointOpposedToForce(sensorValues, &rdx, &ldx)){
+                CD_ERROR("Calculating next point\n");
+                return;
+            }
+
+            rightArmBalThread->setCartesianPosition(rdx);
+            leftArmBalThread->setCartesianPosition(ldx);
+        }
+
+
+        else if(keyboard)
+        // reading keyboard
         {
             // if the iteration of the thread is the first, copy the position.
             // this fixs the warning messages: "KdlVectorConverter.cpp:13 vectorToFrame(): Size mismatch; expected: 6, was: 0"
             if( this->getIterations()!=0 )
                 calculatePointPressingKeyboard(&rdx, &ldx);
             else getRefPosition(&rdx,&ldx);
-        }
 
-    rightArmBalThread->setCartesianPosition(rdx);
-    leftArmBalThread->setCartesianPosition(ldx);
+            rightArmBalThread->setCartesianPosition(rdx);
+            leftArmBalThread->setCartesianPosition(ldx);
+        }
 }
 
 /****************************************************/
@@ -552,8 +575,8 @@ bool BalanceTray::getLeftArmFwdKin(std::vector<double> *currentX)
 bool BalanceTray::configArmsToPosition(double sp, double acc){
 
     // -- Speed and acceleration for 7 joints
-    std::vector<double> armSpeeds(7, sp); // 7,30.0
-    std::vector<double> armAccelerations(7, acc); // 7,30.0
+    std::vector<double> armSpeeds(numRightArmJoints, sp); // 7,30.0
+    std::vector<double> armAccelerations(numRightArmJoints, acc); // 7,30.0
 
     // -- Configuring Devices to Position Mode
     std::vector<int> rightArmControlModes(numRightArmJoints,VOCAB_CM_POSITION);
@@ -663,7 +686,7 @@ bool BalanceTray::moveJointsInPosition(std::vector<double> &rightArm, std::vecto
 
     return true;
 }
-
+/*
 bool BalanceTray::moveJointsInPositionDirect(std::vector<double> &rightArm, std::vector<double> &leftArm){
     if(!rightArmIPositionDirect->setPositions(rightArm.data())){
         CD_ERROR("Problems setting new reference point for right-arm axes.\n");
@@ -676,7 +699,7 @@ bool BalanceTray::moveJointsInPositionDirect(std::vector<double> &rightArm, std:
     }
     return true;
 }
-
+*/
 /************ EXECUTE TRAJECTORY ********************/
 // Offline trajectories : This function are not used by the moment.
 bool BalanceTray::executeTrajectory(std::vector<double> rx, std::vector<double> lx, std::vector<double> rxd, std::vector<double> lxd, double duration, double maxvel)
@@ -777,6 +800,7 @@ bool BalanceTray::rotateTrayByTrajectory(int axis, double angle, double duration
 // Online trajectories: Function used to calculate the next point in relation to the force exerted on the sensors (movement opposite to the force to balance the tray)
 bool BalanceTray::calculatePointOpposedToForce(yarp::sig::Vector sensor, std::vector<double> *rdx, std::vector<double> *ldx){
     char plane ='0';
+    double offset= 0.0;
     double increment = 0;
     std::vector<double> rx, rdsx; // right current point, right destination point
     std::vector<double> lx, ldsx; // left current point, left destination point
@@ -790,24 +814,25 @@ bool BalanceTray::calculatePointOpposedToForce(yarp::sig::Vector sensor, std::ve
     // -- Turning X axis (negative value)
     //    for the first condition, the force of the object on the RIGHT sensor must be greater than 0.06 and must be greater than the absolute value of the opposite side of the tray.
 
-    if(sensor[13] > 0.06 && std::abs(sensor[13])>std::abs(sensor[19]) ){
-        CD_WARNING_NO_HEADER("PRESURE DETECTED RIGHT: [%f]>[%f]\n", sensor[13], sensor[19]);
-        increment=-0.00014*std::abs(sensor[13]); // increment value of the distance between points
+    if(sensor[13] > 0.06 && (std::abs(sensor[13])+offset)>(std::abs(sensor[19])) ){
+        CD_WARNING_NO_HEADER("PRESURE DETECTED RIGHT: [%f]>[%f]\n", (std::abs(sensor[13])+offset), sensor[19]);
+        increment=-0.00015*std::abs(sensor[13]); // increment value of the distance between points (-0.00014)
         plane = 'x';
     }
 
     // -- Turning X axis (positive value)
-    //    for the second condition, the force of the object on the LEFT sensor must be less than -0.6 and must be greater than the absolute value of the opposite side of the tray.
+    //    for the second condition, the force of the object on the LEFT sensor must be less than -0.06 and must be greater than the absolute value of the opposite side of the tray.
 
-    else if(sensor[19] < -0.06 && std::abs(sensor[19])>std::abs(sensor[13]) ){
-        CD_WARNING_NO_HEADER("PRESURE DETECTED LEFT: [%f]<[%f]\n", sensor[13], sensor[19]);
-        increment=0.00014*std::abs(sensor[19]); // increment value of the distance between points
+    else if(sensor[19] < -0.06 && std::abs(sensor[19])>(std::abs(sensor[13])+offset) ){
+        CD_WARNING_NO_HEADER("PRESURE DETECTED LEFT: [%f]<[%f]\n", (std::abs(sensor[13])+offset), sensor[19]);
+        increment=0.00015*std::abs(sensor[19]); // increment value of the distance between points
         plane = 'x';
     }
 
     // -- Turning Y axis (positive value)
     //    for the first condition, the torsional force of the object on the RIGHT sensor and LEFT sensor must be less than -0.08 and greater than 0.08 respectively
-    if((sensor[17] < -0.07) || (sensor[23] > +0.07))
+
+    if((sensor[17] < -0.15) || (sensor[23] > +0.15))
     {
         CD_WARNING_NO_HEADER("PRESURE DETECTED DOWN: [%f][%f]\n", sensor[17], sensor[23]);
         increment=0.0005*(std::abs(sensor[17])+std::abs(sensor[23]));// increment value of the distance between points
@@ -816,7 +841,7 @@ bool BalanceTray::calculatePointOpposedToForce(yarp::sig::Vector sensor, std::ve
 
     // -- Turning Y axis (negative value)
     //    for the second condition, the torsional force of the object on the RIGHT sensor and LEFT sensor must be greater than 0.08 and less than -0.08 respectively
-    else if((sensor[17] > 0.07) || (sensor[23] < -0.07))
+    else if((sensor[17] > 0.1) || (sensor[23] < -0.1))
     {
         CD_WARNING_NO_HEADER("PRESURE DETECTED UP: [%f][%f]\n", sensor[17], sensor[23]);
         increment=-0.0005*(std::abs(sensor[17])+std::abs(sensor[23])); // increment value of the distance between points
@@ -985,10 +1010,10 @@ bool BalanceTray::homePosition(){
     // Prepare the last position        
         CD_INFO("Preparing homing position...\n");
         configArmsToPosition(10,10);
-        double rightArmPoss[7] = {-27.0, -25.5,  28.6, -78.7,  57.5, -70.6};
-        double leftArmPoss[7]  = {-27.0,  25.5, -28.6, -78.7, -57.5, -70.6};
-        std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+7); //teoSim (+6) teo (+7)
-        std::vector<double> leftArm(&leftArmPoss[0], &leftArmPoss[0]+7);
+        double rightArmPoss[6] = {-27.0, -25.5,  28.6, -78.7,  57.5, -70.6};
+        double leftArmPoss[6]  = {-27.0,  25.5, -28.6, -78.7, -57.5, -70.6};
+        std::vector<double> rightArm(&rightArmPoss[0], &rightArmPoss[0]+6); //teoSim (+6) teo (+7)
+        std::vector<double> leftArm(&leftArmPoss[0], &leftArmPoss[0]+6);
         if(!moveJointsInPosition(rightArm, leftArm)){
             CD_ERROR("\n");
             return false;
@@ -1081,6 +1106,7 @@ void BalanceTray::printJr3(yarp::sig::Vector values)
     CD_INFO_NO_HEADER(")\n");
 }
 
+
 /************** GET rotation information *****************/
 
 bool BalanceTray::getAxisRotation(std::vector<double> *axisRotation){
@@ -1105,12 +1131,12 @@ bool BalanceTray::getAxisRotation(std::vector<double> *axisRotation){
 
 bool BalanceTray::writeInfo2Csv(double timeStamp, std::vector<double> axisRotation, yarp::sig::Vector jr3Values)
 {
-    CD_WARNING_NO_HEADER("%.4f ", timeStamp);
-    CD_WARNING_NO_HEADER("%.4f %.4f %.4f %.4f ", axisRotation[0], axisRotation[1], axisRotation[2], axisRotation[3]); // axis rotation
-    CD_WARNING_NO_HEADER("%.4f %.4f\n", jr3Values[13], jr3Values[19]); // +y -y
-    fprintf(fp,"%.4f, ", timeStamp);
-    fprintf(fp,"%.4f, %.4f, %.4f, %.4f, ", axisRotation[0], axisRotation[1], axisRotation[2], axisRotation[3]); // axis rotation
-    fprintf(fp,"%.4f, %.4f\n", jr3Values[13], jr3Values[19]); // +y -y
+    //CD_WARNING_NO_HEADER("%.4f ", timeStamp);
+    //CD_WARNING_NO_HEADER("%.4f %.4f %.4f %.4f ", axisRotation[0], axisRotation[1], axisRotation[2], axisRotation[3]); // axis rotation
+    //CD_WARNING_NO_HEADER("%.4f %.4f\n", jr3Values[13], jr3Values[19]); // +y -y
+    fprintf(fp,"%.4f, %d, ", timeStamp, i);
+    fprintf(fp,"%.8f, %.8f, %.8f, %.8f, ", axisRotation[0], axisRotation[1], axisRotation[2], axisRotation[3]); // axis rotation
+    fprintf(fp,"%.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f\n", jr3Values[12], jr3Values[13], jr3Values[14], jr3Values[15], jr3Values[16], jr3Values[17], jr3Values[18], jr3Values[19], jr3Values[20], jr3Values[21], jr3Values[22], jr3Values[23]); // +y -y
 }
 
 }  // namespace teo
