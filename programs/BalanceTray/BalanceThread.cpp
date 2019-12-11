@@ -31,6 +31,5 @@ void BalanceThread::run()
         return;
     }
 
-    //iPosition->positionMove(6, -1200); // close wrist all the time
     iPositionDirect->setPositions(desireQ.data());
 }

@@ -17,14 +17,12 @@ class BalanceThread : public yarp::os::RateThread
 public:
     BalanceThread(yarp::dev::IEncoders *iEncoders,                  
                   roboticslab::ICartesianSolver *iCartesianSolver,
-                  yarp::dev::IPositionDirect *iPositionDirect,
-                  //yarp::dev::IPositionControl *iPosition,
+                  yarp::dev::IPositionDirect *iPositionDirect,                  
                   int period)
         : yarp::os::RateThread(period),
           iEncoders(iEncoders),
           iCartesianSolver(iCartesianSolver),          
-          iPositionDirect(iPositionDirect),
-          //iPosition(iPosition),
+          iPositionDirect(iPositionDirect),          
           axes(0)
     {}
 
@@ -51,8 +49,7 @@ private:
     yarp::os::Semaphore positionMutex;
     yarp::dev::IEncoders *iEncoders;    
     roboticslab::ICartesianSolver *iCartesianSolver;
-    yarp::dev::IPositionDirect *iPositionDirect;
-    //yarp::dev::IPositionControl *iPosition;
+    yarp::dev::IPositionDirect *iPositionDirect;    
     std::vector<double> position;
     int axes;
 };
