@@ -4,8 +4,8 @@
 
 #include <algorithm>
 
-namespace teo
-{
+using namespace roboticslab::KinRepresentation;
+using namespace teo;
 
 /************************************************************************/
 
@@ -138,7 +138,6 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
         CD_INFO("Acquired rightArmIControlMode interface\n");    
 
     // connecting our device with "PositionControl" interface
-    // connecting our device with "position control" interface (configuring our device: speed, acceleration... and sending joint positions)
     if (!rightArmDevice.view(rightArmIPositionControl) ) {
         CD_ERROR("Problems acquiring rightArmIPositionControl interface\n");
         return false;
@@ -152,14 +151,6 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     } else
         CD_INFO("Acquired rightArmIPositionDirect interface\n");
 
-    // -- connecting our device with "RemoteVariables" interface
-    /*    This interface is used to test external reference mode (but it's not used)
-    if (!rightArmDevice.view(rightArmIRemoteVariables) ) {
-        CD_ERROR("Problems acquiring rightArmIRemoteVariables interface\n");
-        return false;
-    } else
-        CD_INFO("Acquired rightArmIRemoteVariables interface\n");
-    */
 
     // ------ LEFT ARM -------
 
@@ -206,15 +197,6 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     } else
         CD_INFO("Acquired leftArmIPositionDirect interface\n");
 
-    // -- connecting our device with "RemoteVariables" interface
-    /*  This interface is used to test external reference mode (but it's not used for now)
-    if (!leftArmDevice.view(leftArmIRemoteVariables) ) {
-        CD_ERROR("Problems acquiring leftArmIRemoteVariables interface\n");
-        return false;
-    } else
-        CD_INFO("Acquired leftArmIRemoteVariables interface\n");
-
-    */
 
     // ----- Configuring KDL Solver for right-arm -----
 
@@ -239,11 +221,9 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     std::string rightKinPath = rf.findFileByName("fixedTrunk-rightArm-fetch-kinematics.ini");;
     rightArmSolverOptions.fromConfigFile(rightKinPath);
     rightArmSolverOptions.put("device","KdlSolver");
-    //rightArmSolverOptions.put("maxIter", 1000); // iterator configuration
-    //rightArmSolverOptions.put("eps", 1e-9); // precision
     rightArmSolverOptions.put("mins", yarp::os::Value::makeList(qrMin.toString().c_str()));
     rightArmSolverOptions.put("maxs", yarp::os::Value::makeList(qrMax.toString().c_str()));
-    //rightArmSolverOptions.put("HN", yarp::os::Value::makeList("-0.00984635  0.9989744  -0.04419502  0.23194013 -0.00484966 -0.04424435 -0.99900897 -0.01027258 -0.99993976 -0.00962226  0.00528033 -0.00223408 0 0 0 1"));
+    rightArmSolverOptions.put("ik", "st"); // to use screw theory IK
     rightArmSolverDevice.open(rightArmSolverOptions);
 
     if( ! rightArmSolverDevice.isValid() )
@@ -256,8 +236,9 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     {
         CD_ERROR("Could not view iCartesianSolver in KDLSolver \n");
         return false;
-    } else
-        CD_SUCCESS("Acquired rightArmICartesianSolver interface\n");
+    }
+
+    CD_SUCCESS("Acquired rightArmICartesianSolver interface\n");
 
 
     // ----- Configuring KDL Solver for left-arm -----
@@ -285,23 +266,24 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
     leftArmSolverOptions.put("device", "KdlSolver");
     leftArmSolverOptions.put("mins", yarp::os::Value::makeList(qlMin.toString().c_str()));
     leftArmSolverOptions.put("maxs", yarp::os::Value::makeList(qlMax.toString().c_str()));
-    //leftArmSolverOptions.put("ik", "st"); // to use screw theory IK
-    //leftArmSolverOptions.put("HN", yarp::os::Value::makeList("-0.00984635  -0.9989744  -0.04419502  0.23194013 0.00484966 -0.04424435 0.99900897 0.01027258 -0.99993976 0.00962226  0.00528033 -0.00223408 0 0 0 1"));
+    leftArmSolverOptions.put("ik", "st"); // to use screw theory IK
     leftArmSolverDevice.open(leftArmSolverOptions);
 
     if( ! leftArmSolverDevice.isValid() )
     {
         CD_ERROR("KDLSolver solver device for left-arm is not valid \n");
         return false;
-    } else
-        CD_SUCCESS("Acquired rightArmICartesianSolver interface\n");
+    }
+
+    CD_SUCCESS("Acquired rightArmICartesianSolver interface\n");
 
     if( ! leftArmSolverDevice.view(leftArmICartesianSolver) )
     {
         CD_ERROR("Could not view iCartesianSolver in KDLSolver\n");
         return false;
-    } else
-        CD_SUCCESS("Acquired leftArmICartesianSolver interface\n");
+    }
+
+    CD_SUCCESS("Acquired leftArmICartesianSolver interface\n");
 
 
     // ** Unify TCP of right-arm and left-arm: apppending link to the tray's centroid
@@ -375,13 +357,12 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
 
     if (speak) dialogueManager->ttsSay("un momento por favor");
 
-    if(configArmsToPositionDirect()) {
-        CD_SUCCESS("Configured to Position Direct\n");
-    }
-    else {
+    if(!configArmsToPositionDirect()) {
         CD_ERROR("Configuring drivers to Position Direct\n");
         return false;
     }
+
+    CD_SUCCESS("Configured to Position Direct\n");
 
     if (speak) dialogueManager->ttsSay("Sensores de fuerza par calibrados. Que comience el juego");
 
@@ -686,20 +667,7 @@ bool BalanceTray::moveJointsInPosition(std::vector<double> &rightArm, std::vecto
 
     return true;
 }
-/*
-bool BalanceTray::moveJointsInPositionDirect(std::vector<double> &rightArm, std::vector<double> &leftArm){
-    if(!rightArmIPositionDirect->setPositions(rightArm.data())){
-        CD_ERROR("Problems setting new reference point for right-arm axes.\n");
-        return false;
-    }
 
-    if(!leftArmIPositionDirect->setPositions(leftArm.data())){
-        CD_ERROR("Problems setting new reference point for left-arm axes.\n");
-        return false;
-    }
-    return true;
-}
-*/
 /************ EXECUTE TRAJECTORY ********************/
 // Offline trajectories : This function are not used by the moment.
 bool BalanceTray::executeTrajectory(std::vector<double> rx, std::vector<double> lx, std::vector<double> rxd, std::vector<double> lxd, double duration, double maxvel)
@@ -881,8 +849,8 @@ bool BalanceTray::calculatePointOpposedToForce(yarp::sig::Vector sensor, std::ve
 
     // transformation: Axis Angle Scaled -> Axis Angle
     //std::vector<double> rdsxaa, ldsxaa; -> global
-    KinRepresentation::decodePose(rdsx, rdsxaa, KinRepresentation::CARTESIAN, KinRepresentation::AXIS_ANGLE, KinRepresentation::DEGREES );
-    KinRepresentation::decodePose(ldsx, ldsxaa, KinRepresentation::CARTESIAN, KinRepresentation::AXIS_ANGLE, KinRepresentation::DEGREES );
+    decodePose(rdsx, rdsxaa, coordinate_system::CARTESIAN, orientation_system::AXIS_ANGLE, angular_units::DEGREES );
+    decodePose(ldsx, ldsxaa, coordinate_system::CARTESIAN, orientation_system::AXIS_ANGLE, angular_units::DEGREES );
 
     // Checks the joint limits!
     CD_DEBUG_NO_HEADER("R-POSS: [");
@@ -968,8 +936,8 @@ bool BalanceTray::calculatePointPressingKeyboard(std::vector<double> *rdx, std::
     }
 
         // transformation: Axis Angle Scaled -> Axis Angle
-        KinRepresentation::decodePose(rdsx, rdsxaa, KinRepresentation::CARTESIAN, KinRepresentation::AXIS_ANGLE, KinRepresentation::DEGREES );
-        KinRepresentation::decodePose(ldsx, ldsxaa, KinRepresentation::CARTESIAN, KinRepresentation::AXIS_ANGLE, KinRepresentation::DEGREES );
+        decodePose(rdsx, rdsxaa, coordinate_system::CARTESIAN, orientation_system::AXIS_ANGLE, angular_units::DEGREES );
+        decodePose(ldsx, ldsxaa, coordinate_system::CARTESIAN, orientation_system::AXIS_ANGLE, angular_units::DEGREES );
 
         // Checks the joint limits!
         CD_DEBUG_NO_HEADER("R-POSS: [");
@@ -1076,7 +1044,7 @@ void BalanceTray::printFKinAA(){
     if(! getRightArmFwdKin(&rightArmPoint))
         CD_ERROR("Doing Forward Kinematic of right-arm...\n");
     std::vector<double> rightArmPointInAxisAngle(7); // axis angle
-    KinRepresentation::decodePose(rightArmPoint, rightArmPointInAxisAngle, KinRepresentation::CARTESIAN, KinRepresentation::AXIS_ANGLE, KinRepresentation::DEGREES );
+    decodePose(rightArmPoint, rightArmPointInAxisAngle, coordinate_system::CARTESIAN, orientation_system::AXIS_ANGLE, angular_units::DEGREES );
     printf("R-arm pose: [");
     for(int i=0; i<rightArmPointInAxisAngle.size(); i++)
         printf("%f ",rightArmPointInAxisAngle[i]);
@@ -1086,7 +1054,7 @@ void BalanceTray::printFKinAA(){
     if(! getLeftArmFwdKin(&leftArmPoint))
         CD_ERROR("Doing Forward Kinematic of left-arm...\n");
     std::vector<double> leftArmPointInAxisAngle(7); // axis angle
-    KinRepresentation::decodePose(leftArmPoint, leftArmPointInAxisAngle, KinRepresentation::CARTESIAN, KinRepresentation::AXIS_ANGLE, KinRepresentation::DEGREES );
+    decodePose(leftArmPoint, leftArmPointInAxisAngle, coordinate_system::CARTESIAN, orientation_system::AXIS_ANGLE, angular_units::DEGREES );
     printf("L-arm pose: [");
     for(int i=0; i<leftArmPointInAxisAngle.size(); i++)
         printf("%f ",leftArmPointInAxisAngle[i]);
@@ -1115,7 +1083,7 @@ bool BalanceTray::getAxisRotation(std::vector<double> *axisRotation){
         CD_ERROR("Doing Forward Kinematic of right-arm...\n");
 
     std::vector<double> rightArmPointInAxisAngle(7); // axis angle
-    KinRepresentation::decodePose(rightArmPoint, rightArmPointInAxisAngle, KinRepresentation::CARTESIAN, KinRepresentation::AXIS_ANGLE, KinRepresentation::DEGREES );
+    decodePose(rightArmPoint, rightArmPointInAxisAngle, coordinate_system::CARTESIAN, orientation_system::AXIS_ANGLE, angular_units::DEGREES );
 
     axisRotation->resize(4);
     std::copy(rightArmPointInAxisAngle.begin() + 3, rightArmPointInAxisAngle.end(), axisRotation->begin());
@@ -1138,6 +1106,4 @@ bool BalanceTray::writeInfo2Csv(double timeStamp, std::vector<double> axisRotati
     fprintf(fp,"%.8f, %.8f, %.8f, %.8f, ", axisRotation[0], axisRotation[1], axisRotation[2], axisRotation[3]); // axis rotation
     fprintf(fp,"%.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f\n", jr3Values[12], jr3Values[13], jr3Values[14], jr3Values[15], jr3Values[16], jr3Values[17], jr3Values[18], jr3Values[19], jr3Values[20], jr3Values[21], jr3Values[22], jr3Values[23]); // +y -y
 }
-
-}  // namespace teo
 
