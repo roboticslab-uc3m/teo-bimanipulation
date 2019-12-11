@@ -3,7 +3,7 @@
 #include "BalanceThread.hpp"
 #include <yarp/os/Time.h>
 #include <KdlVectorConverter.hpp>
-#include "KinematicRepresentation.hpp"
+#include <KinematicRepresentation.hpp>
 #include <ColorDebug.h>
 
 using namespace roboticslab;

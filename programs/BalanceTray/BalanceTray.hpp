@@ -9,6 +9,7 @@
 #include <ICartesianTrajectory.hpp>
 #include <KdlTrajectory.hpp>
 #include "KinematicRepresentation.hpp"
+#include "DialogueManager.hpp"
 
 #include "TrajectoryThread.hpp"
 #include "BalanceThread.hpp"
@@ -16,6 +17,7 @@
 
 
 #define DEFAULT_ROBOT "teo" // teo or teoSim (default teo)
+#define DEFAULT_MODE "keyboard"
 #define PT_MODE_MS 50
 #define INPUT_READING_MS 10
 
@@ -37,13 +39,27 @@ namespace teo
         BalanceTray() :  yarp::os::RateThread(INPUT_READING_MS) {} // constructor
         virtual bool configure(yarp::os::ResourceFinder &rf);
 
+        /** current vector position of the tray centroid **/
+        std::vector<double> rdsxaa;
+        std::vector<double> ldsxaa;
+
         private:
 
             /** robot used (teo/teoSim) **/
             std::string robot;
 
             /** control mode: jr3/keyboard **/
-            bool useJr3;
+            bool jr3Balance;
+            bool testMov;
+            bool keyboard;
+            bool jr3ToCsv;
+
+
+            /** with speech **/
+            bool speak;
+
+            /** Operating mode: jr3Balance / keyboard / jr3Check2Csv **/
+            std::string mode;
 
             /** RFModule interruptModule. */
             virtual bool interruptModule();
@@ -118,16 +134,14 @@ namespace teo
             std::vector<double>  leftArmRefpos;            
             bool setRefPosition(std::vector<double> rx, std::vector<double> lx);
             bool getRefPosition(std::vector<double> *rx, std::vector<double> *lx);
-            std::vector<double> rightArmHomepos;
-            std::vector<double>  leftArmHomepos;
             bool homePosition(); // initial pos
-            bool setHomePosition(std::vector<double> rx, std::vector<double> lx);
-            bool getHomePosition(std::vector<double> *rx, std::vector<double> *lx);
 
             /****** FUNCTIONS ******/            
 
             /** Execute trajectory using a thread and KdlTrajectory**/
             bool executeTrajectory(std::vector<double> rx, std::vector<double> lx, std::vector<double> rxd, std::vector<double> lxd, double duration, double maxvel);
+            bool rotateTrayByTrajectory(int axis, double angle, double duration, double maxvel);
+            bool passJr3ValuesToCsv();
 
             /** Configure functions **/
             bool configArmsToPosition(double sp, double acc);
@@ -138,9 +152,6 @@ namespace teo
             bool moveJointsInPositionDirect(std::vector<double> &rightArm, std::vector<double> &leftArm);
 
 
-            /** Moving the tray calculating a trajectory **/
-            bool rotateTrayByTrajectory(int axis, double angle, double duration, double maxvel);
-
             /** calculate next point in relation to the forces readed by the sensor or key pressed **/
             bool calculatePointOpposedToForce(yarp::sig::Vector sensor, std::vector<double> *rdx, std::vector<double> *ldx);
             bool calculatePointPressingKeyboard(std::vector<double> *rdx, std::vector<double> *ldx);
@@ -148,6 +159,15 @@ namespace teo
 
             /** Check movements functions */
             void checkLinearlyMovement();
+
+            /** Get axis rotation of the tray **/
+            bool getAxisRotation(std::vector<double> *axisRotation);
+
+            /** Write information in CSV file **/
+            FILE *fp;
+            bool writeInfo2Csv(double timeStamp, std::vector<double> axisRotation, yarp::sig::Vector jr3Values);
+            // ireration
+            int i;
 
             /** Show information **/
             void printFKinAAS();
@@ -157,8 +177,11 @@ namespace teo
             /** movement finished */
             bool done;
 
-            /** Input port from dialogue manager */
-            yarp::os::RpcServer inDialogPort;
+            /** Current time **/
+            double initTime;
+
+            /** Dialogue manager */
+            DialogueManager *dialogueManager;
 
             /** Thread run */
             virtual bool threadInit();

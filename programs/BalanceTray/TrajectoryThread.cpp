@@ -6,7 +6,7 @@
 #include "KinematicRepresentation.hpp"
 #include <ColorDebug.h>
 
-using namespace roboticslab;
+using namespace roboticslab::KinRepresentation;
 
 bool TrajectoryThread::threadInit()
 {
@@ -26,13 +26,13 @@ void TrajectoryThread::run()
     std::vector<double> position, positionInAA;
     iCartTrajectory->getPosition(movementTime, position);
 
-    KinRepresentation::decodePose(position, positionInAA, KinRepresentation::CARTESIAN, KinRepresentation::AXIS_ANGLE, KinRepresentation::DEGREES );
+    decodePose(position, positionInAA, coordinate_system::CARTESIAN, orientation_system::AXIS_ANGLE, angular_units::DEGREES );
 
     CD_DEBUG_NO_HEADER("PTO: [");
     for(int i=0; i<positionInAA.size(); i++){
         CD_DEBUG_NO_HEADER("%f ",positionInAA[i]);
     }
-    CD_DEBUG_NO_HEADER("] (%f)\n ", movementTime);
+    CD_DEBUG_NO_HEADER("] (%f)\n", movementTime);
 
 
     std::vector<double> currentQ(axes);
