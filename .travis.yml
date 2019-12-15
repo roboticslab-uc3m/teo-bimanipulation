@@ -1,58 +1,35 @@
-# Integración continua Travis CI
-
-# Lenguaje de programación
-
 language: cpp
-
-# Sistema operativo destino a probar
-
+dist: bionic
 os: linux
-
-# Distribución del sistema operativo
-
-dist: xenial
-
-
-# Compiladores a emplear
 
 compiler: 
   - gcc
   - clang
-  
-# compilación en paralelo con diferentes versiones de YARP
 
 env:
   global:
     - CACHE_DIR=~/cached-deps
+    - YCM_CHECKOUT=ycm-0.11
   matrix:
-    - YARP_CHECKOUT=master
-    - YARP_CHECKOUT=v3.1.1
-    
+    - YARP_CHECKOUT=yarp-3.3
+    - YARP_CHECKOUT=yarp-3.2
+
 matrix:
   include:
     - if: type = cron
       compiler: gcc
-      env: ROBOTOLOGY_CHECKOUT=devel
+      env: ROBOTOLOGY_CHECKOUT=master
     - if: type = cron
       compiler: clang
-      env: ROBOTOLOGY_CHECKOUT=devel
-   
-    
+      env: ROBOTOLOGY_CHECKOUT=master
+
 cache:
   directories: $CACHE_DIR    
-  
+
 addons:
   apt:
     packages:
     - libeigen3-dev # YARP API
-
-# Tareas a realizar antes de instalacción
-before_install:
-
-# En caso de requerir instalar algo para la prueba
-
-install:
-
 
 install:
   #-- Install YCM
@@ -60,7 +37,7 @@ install:
     source "$TRAVIS_BUILD_DIR/scripts/travis/git-cache-dependency.sh"
     --package-name YCM
     --repo-url https://github.com/robotology/ycm
-    --repo-checkout "${ROBOTOLOGY_CHECKOUT:-${YCM_CHECKOUT:-master}}"
+    --repo-checkout "${ROBOTOLOGY_CHECKOUT:-$YCM_CHECKOUT}"
 
   #-- Install YARP
   - >
@@ -71,14 +48,14 @@ install:
     --additional-cmake-options "-DSKIP_ACE:BOOL=ON"
     --prepend-to-linker-path lib
     --additional-export-paths "YARP_DATA_DIRS;share/yarp"
-    
+
   #-- Install color-debug
   - >
     source "$TRAVIS_BUILD_DIR/scripts/travis/git-cache-dependency.sh"
     --package-name COLOR_DEBUG
     --repo-url https://github.com/roboticslab-uc3m/color-debug
     --repo-checkout develop
-    
+
   #-- Install KDL
   - >
     source "$TRAVIS_BUILD_DIR/scripts/travis/git-cache-dependency.sh"
@@ -87,14 +64,14 @@ install:
     --repo-checkout master
     --cmake-home-dir orocos_kdl
     --prepend-to-linker-path lib
-    
+
   #-- Install kinematics-dynamics (for ICartesianControl)
   - >
     source "$TRAVIS_BUILD_DIR/scripts/travis/git-cache-dependency.sh"
     --package-name ROBOTICSLAB_KINEMATICS_DYNAMICS
     --repo-url https://github.com/roboticslab-uc3m/kinematics-dynamics
     --repo-checkout develop   
-    
+
   #-- Install yarp-devices (for testBasicCartesianControl and apps using proximity sensors)
   - >
     source "$TRAVIS_BUILD_DIR/scripts/travis/git-cache-dependency.sh"
@@ -102,26 +79,23 @@ install:
     --repo-url https://github.com/roboticslab-uc3m/yarp-devices
     --repo-checkout develop
     --additional-export-paths "YARP_DATA_DIRS;share/roboticslab-yarp-devices"
-    
-  # Tareas a ejecutar antes de nuestra prueba    
+
 before_script:
   - mkdir -p "$TRAVIS_BUILD_DIR/build" && cd "$_"
   - cmake .. -DCMAKE_INSTALL_PREFIX="$PWD/install"
   - make install
   - export LD_LIBRARY_PATH=$PWD/install/lib:$LD_LIBRARY_PATH
   - export YARP_DATA_DIRS=$PWD/install/share/roboticslab-kinematics-dynamics:$YARP_DATA_DIRS
-        
+
 script:
   - echo "No unit tests available"
-  
+
 after_success:
   - sudo make uninstall
 
-# Notificaciones por correo
 notifications:
   email:
     recipients:
       - rasantos@it.uc3m.es
     on_success: change
     on_failure: always
-
