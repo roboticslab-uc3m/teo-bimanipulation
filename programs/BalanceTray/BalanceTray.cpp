@@ -218,7 +218,7 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
         }
 
     yarp::os::Property rightArmSolverOptions;
-    std::string rightKinPath = rf.findFileByName("fixedTrunk-rightArm-fetch-kinematics.ini");;
+    std::string rightKinPath = rf.findFileByName("teo-fixedTrunk-rightArm-fetch.ini");;
     rightArmSolverOptions.fromConfigFile(rightKinPath);
     rightArmSolverOptions.put("device","KdlSolver");
     rightArmSolverOptions.put("mins", yarp::os::Value::makeList(qrMin.toString().c_str()));
@@ -261,7 +261,7 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
         }
 
     yarp::os::Property leftArmSolverOptions;    
-    std::string leftKinPath = rf.findFileByName("fixedTrunk-leftArm-fetch-kinematics.ini");;
+    std::string leftKinPath = rf.findFileByName("teo-fixedTrunk-leftArm-fetch.ini");;
     leftArmSolverOptions.fromConfigFile(leftKinPath);
     leftArmSolverOptions.put("device", "KdlSolver");
     leftArmSolverOptions.put("mins", yarp::os::Value::makeList(qlMin.toString().c_str()));
