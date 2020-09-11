@@ -10,11 +10,11 @@ env:
   global:
     - CACHE_DIR=~/cached-deps
     - YCM_CHECKOUT=ycm-0.11
-  matrix:
+  jobs:
     - YARP_CHECKOUT=yarp-3.4
     - YARP_CHECKOUT=yarp-3.3
 
-matrix:
+jobs:
   include:
     - if: type = cron
       compiler: gcc
@@ -54,7 +54,7 @@ install:
     source "$TRAVIS_BUILD_DIR/scripts/travis/git-cache-dependency.sh"
     --package-name COLOR_DEBUG
     --repo-url https://github.com/roboticslab-uc3m/color-debug
-    --repo-checkout develop
+    --repo-checkout master
 
   #-- Install KDL
   - >
@@ -70,14 +70,14 @@ install:
     source "$TRAVIS_BUILD_DIR/scripts/travis/git-cache-dependency.sh"
     --package-name ROBOTICSLAB_KINEMATICS_DYNAMICS
     --repo-url https://github.com/roboticslab-uc3m/kinematics-dynamics
-    --repo-checkout develop   
+    --repo-checkout master
 
   #-- Install yarp-devices (for testBasicCartesianControl and apps using proximity sensors)
   - >
     source "$TRAVIS_BUILD_DIR/scripts/travis/git-cache-dependency.sh"
     --package-name ROBOTICSLAB_YARP_DEVICES
     --repo-url https://github.com/roboticslab-uc3m/yarp-devices
-    --repo-checkout develop
+    --repo-checkout master
     --additional-export-paths "YARP_DATA_DIRS;share/roboticslab-yarp-devices"
 
 before_script:
