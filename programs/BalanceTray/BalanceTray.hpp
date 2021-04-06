@@ -4,7 +4,6 @@
 #include <yarp/os/all.h>
 #include <yarp/dev/all.h>
 #include <yarp/dev/IAnalogSensor.h>
-#include "ColorDebug.h"
 #include "ICartesianSolver.h"
 #include "KinematicRepresentation.hpp"
 #include "DialogueManager.hpp"
