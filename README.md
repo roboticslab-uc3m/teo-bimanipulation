@@ -1,8 +1,7 @@
 # Teo-bimanipulation
 Application of Teo ballancing balls on a tray using his two arms and his force torque sensors (Press image to see a [video](https://youtu.be/hzQrKVqFxTk))
- 
- 
- [![IMAGE ALT TEXT](http://i3.ytimg.com/vi/X3zJ8DxNW7I/maxresdefault.jpg)](https://www.youtube.com/watch?v=hzQrKVqFxTk "TEO bimanipulation demo: a humanoid robot ballancing balls on a tray using force torque sensors")
+
+[![IMAGE ALT TEXT](http://i3.ytimg.com/vi/X3zJ8DxNW7I/maxresdefault.jpg)](https://www.youtube.com/watch?v=hzQrKVqFxTk "TEO bimanipulation demo: a humanoid robot ballancing balls on a tray using force torque sensors")
  
 ## Contributing
 
@@ -21,6 +20,6 @@ Application of Teo ballancing balls on a tray using his two arms and his force t
 
 ## Status
 
-[![Build Status (Linux)](https://travis-ci.com/roboticslab-uc3m/teo-bimanipulation.svg?branch=master)](https://travis-ci.com/roboticslab-uc3m/teo-bimanipulation)
+[![CI (Linux)](https://github.com/roboticslab-uc3m/teo-bimanipulation/workflows/Continuous%20Integration/badge.svg)](https://github.com/roboticslab-uc3m/teo-bimanipulation/actions)
 
 [![Issues](https://img.shields.io/github/issues/roboticslab-uc3m/teo-bimanipulation.svg?label=Issues)](https://github.com/roboticslab-uc3m/teo-bimanipulation/issues)
