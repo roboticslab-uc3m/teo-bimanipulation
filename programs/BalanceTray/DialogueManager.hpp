@@ -6,7 +6,6 @@
 #include <cmath>
 #include <yarp/os/all.h>
 #include <yarp/dev/all.h>
-#include <ColorDebug.h>
 
 #define DEFAULT_LANGUAGE "spanish"
 
