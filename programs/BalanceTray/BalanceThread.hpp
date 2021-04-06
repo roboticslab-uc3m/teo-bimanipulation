@@ -8,7 +8,6 @@
 #include <yarp/dev/IPositionControl.h>
 #include "ICartesianSolver.h"
 #include <ConfigurationSelector.hpp>
-#include <ICartesianTrajectory.hpp>
 
 #define PI 3.141592654
 

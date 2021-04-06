@@ -6,8 +6,6 @@
 #include <yarp/dev/IAnalogSensor.h>
 #include "ColorDebug.h"
 #include "ICartesianSolver.h"
-#include <ICartesianTrajectory.hpp>
-#include <KdlTrajectory.hpp>
 #include "KinematicRepresentation.hpp"
 #include "DialogueManager.hpp"
 

@@ -22,6 +22,8 @@
  *
  */
 
+#include <yarp/os/LogStream.h>
+
 #include "BalanceTray.hpp"
 
 int main(int argc, char **argv) {
@@ -36,18 +38,15 @@ int main(int argc, char **argv) {
         return mod.runModule(rf);
     }
 
-    CD_INFO_NO_HEADER("Run \"%s --help\" for options.\n",argv[0]);
-    CD_INFO_NO_HEADER("%s checking for yarp network... ",argv[0]);
+    yInfo("Run \"%s --help\" for options", argv[0]);
+    yInfo("%s checking for yarp network...", argv[0]);
     fflush(stdout);
 
     yarp::os::Network yarp;
     if (!yarp.checkNetwork()) {
-        fprintf(stderr,"[fail]\n%s found no yarp network (try running \"yarpserver &\"), bye!\n",argv[0]);
+        yError("%s found no yarp network (try running \"yarpserver &\"), bye!", argv[0]);
         return 1;
-    } else CD_SUCCESS_NO_HEADER("[ok]\n");
-
+    };
 
     return mod.runModule(rf);
-
 }
-

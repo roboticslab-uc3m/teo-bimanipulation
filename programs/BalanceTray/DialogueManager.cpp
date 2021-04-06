@@ -2,6 +2,8 @@
 
 #include "DialogueManager.hpp"
 
+#include <yarp/os/LogStream.h>
+
 namespace teo
 {
 
@@ -20,7 +22,7 @@ DialogueManager::DialogueManager(std::string language) {
     */
 
     while(!yarp::os::Network::connect("/balanceTray/tts/rpc:c","/tts/rpc:s")){
-        CD_WARNING("TTS port not detected! Please, run: yarpdev --Espeak --name /tts\n");
+        yWarning() << "TTS port not detected! Please, run: yarpdev --Espeak --name /tts";
         yarp::os::Time::delay(1);
     }
 

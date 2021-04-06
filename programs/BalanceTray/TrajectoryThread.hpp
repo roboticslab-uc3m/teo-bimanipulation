@@ -2,31 +2,30 @@
 
 #include <yarp/os/RateThread.h>
 
+#include <kdl/trajectory.hpp>
 #include <yarp/dev/IEncoders.h>
 #include <yarp/dev/IPositionDirect.h>
 #include "ICartesianSolver.h"
 #include <ConfigurationSelector.hpp>
-#include <ICartesianTrajectory.hpp>
 
 class TrajectoryThread : public yarp::os::RateThread
 {
 public:
     TrajectoryThread(yarp::dev::IEncoders *iEncoders,
                   roboticslab::ICartesianSolver *iCartesianSolver,
-                  //roboticslab::ICartesianTrajectory *iCartTrajectory,
                   yarp::dev::IPositionDirect *iPositionDirect,
                   int period)
         : yarp::os::RateThread(period),
           iEncoders(iEncoders),
           iCartesianSolver(iCartesianSolver),
-          //iCartTrajectory(iCartTrajectory),
+          trajectory(nullptr),
           iPositionDirect(iPositionDirect),
           axes(0),
           startTime(0)
     {}
 
-    void setICartesianTrajectory(roboticslab::ICartesianTrajectory *iCartTrajectory) {
-        this->iCartTrajectory = iCartTrajectory;
+    void setICartesianTrajectory(KDL::Trajectory *trajectory) {
+        this->trajectory = trajectory;
     }
 
     void resetTime();
@@ -38,7 +37,7 @@ protected:
 private:
     yarp::dev::IEncoders *iEncoders;
     roboticslab::ICartesianSolver *iCartesianSolver;
-    roboticslab::ICartesianTrajectory * iCartTrajectory;
+    KDL::Trajectory *trajectory;
     yarp::dev::IPositionDirect *iPositionDirect;
     int axes;
     double startTime;

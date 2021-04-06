@@ -7,23 +7,17 @@ IF (ENABLE_balanceTray)
 set(KEYWORD "balanceTray")
 
 find_package(YARP REQUIRED)
-find_package(COLOR_DEBUG REQUIRED)
 find_package(orocos_kdl 1.4 QUIET)
 find_package(ROBOTICSLAB_KINEMATICS_DYNAMICS REQUIRED)
-
-
-include_directories(${YARP_INCLUDE_DIRS} ${TEMPLATE_NAME_INCLUDE_DIRS})
-link_directories(${TEMPLATE_NAME_LINK_DIRS})
 
 add_executable(${KEYWORD} main.cpp BalanceTray.hpp BalanceTray.cpp TrajectoryThread.hpp TrajectoryThread.cpp BalanceThread.hpp BalanceThread.cpp DialogueManager.hpp DialogueManager.cpp)
 target_link_libraries(${KEYWORD}
                     ${YARP_LIBRARIES}
-                    ${TEMPLATE_NAME_LIBRARIES}
+                    ${orocos_kdl_LIBRARIES}
                     ROBOTICSLAB::KdlVectorConverterLib
                     ROBOTICSLAB::KinematicRepresentationLib
-                    ROBOTICSLAB::TrajectoryLib
-                    ROBOTICSLAB::ColorDebug
                     StaticLibrary)
+target_include_directories(${KEYWORD} PRIVATE ${orocos_kdl_INCLUDE_DIRS})
 install(TARGETS ${KEYWORD} DESTINATION bin)
 
 ENDIF (ENABLE_balanceTray)
