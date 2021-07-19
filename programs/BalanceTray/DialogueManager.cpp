@@ -41,7 +41,7 @@ DialogueManager::DialogueManager(std::string language) {
         bConf.clear();
 
         bConf.addString("setSpeed");
-        bConf.addInt(150);
+        bConf.addInt32(150);
         outTtsPort.write(bConf);
         printf("[info] Configured bottle: %s\n", bConf.toString().c_str());
         bConf.clear();
@@ -55,7 +55,7 @@ DialogueManager::DialogueManager(std::string language) {
         bConf.clear();
 
         bConf.addString("setSpeed");
-        bConf.addInt(170);
+        bConf.addInt32(170);
         outTtsPort.write(bConf);
         printf("[info] Configured bottle: %s\n", bConf.toString().c_str());
         bConf.clear();

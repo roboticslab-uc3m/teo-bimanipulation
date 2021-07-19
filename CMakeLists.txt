@@ -2,7 +2,7 @@
 # Authors: Raul de Santos Rico
 # CopyPolicy: Released under the terms of the LGPLv2.1
 
-cmake_minimum_required(VERSION 2.8.9 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.5)
 
 # Start a project.
 project(TEO_BIMANIPULATION)
@@ -21,7 +21,7 @@ option(ENABLE_balanceTray "Choose if you want to compile balanceTray demostratio
 
 # Bootstrap YCM.
 # https://github.com/robotology/ycm/issues/118
-set(YCM_TAG v0.2.2)
+set(YCM_TAG v0.9.0)
 include(YCMBootstrap)
 
 # Retrieve current TEO_BIMANIPULATION version.
