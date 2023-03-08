@@ -29,6 +29,8 @@ CMakeLists.txt.user
 **/build*/
 /.project
 /.cproject
+/.vs/
+/.vscode/
 
 # Python files
 *.pyc
