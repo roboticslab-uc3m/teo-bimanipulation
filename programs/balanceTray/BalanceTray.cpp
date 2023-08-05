@@ -2,6 +2,8 @@
 
 #include "BalanceTray.hpp"
 
+#include <cmath>
+
 #include <algorithm>
 
 #include <kdl/path_line.hpp>
@@ -11,7 +13,11 @@
 #include <kdl/velocityprofile_trap.hpp>
 
 #include <yarp/os/LogStream.h>
+#include <yarp/os/Time.h>
+
 #include <KdlVectorConverter.hpp>
+
+#include "StaticLibrary.hpp"
 
 using namespace roboticslab::KinRepresentation;
 using namespace roboticslab::KdlVectorConverter;
@@ -380,7 +386,7 @@ bool BalanceTray::configure(yarp::os::ResourceFinder &rf)
 
     if(testMov)
     {
-       double increment = (PI/180); // 1 degree = 0,0174533 rad
+       double increment = (M_PI/1); // 1 degree = 0,0174533 rad
 
        //rotateTrayByTrajectory(0,increment,1,10);
 
@@ -454,7 +460,7 @@ bool BalanceTray::updateModule()
 /************************************************************************/
 
 bool BalanceTray::threadInit(){
-    initTime = Time::now();
+    initTime = yarp::os::Time::now();
     sensorValues.zero();
     return true;
 }
@@ -483,7 +489,7 @@ void BalanceTray::run()
                 yError() << "Getting tray rotation";
                 return;
             }
-            writeInfo2Csv(Time::now()-initTime, axisRotation, sensorValues);
+            writeInfo2Csv(yarp::os::Time::now()-initTime, axisRotation, sensorValues);
         }
 
         if(jr3Balance)

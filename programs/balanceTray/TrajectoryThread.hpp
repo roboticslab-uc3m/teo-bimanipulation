@@ -1,12 +1,16 @@
 // -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*-
 
-#include <yarp/os/PeriodicThread.h>
+#ifndef __TRAJECTORY_THREAD_HPP__
+#define __TRAJECTORY_THREAD_HPP__
 
 #include <kdl/trajectory.hpp>
+
+#include <yarp/os/PeriodicThread.h>
+
 #include <yarp/dev/IEncoders.h>
 #include <yarp/dev/IPositionDirect.h>
-#include "ICartesianSolver.h"
-#include <ConfigurationSelector.hpp>
+
+#include <ICartesianSolver.h>
 
 class TrajectoryThread : public yarp::os::PeriodicThread
 {
@@ -24,7 +28,8 @@ public:
           startTime(0)
     {}
 
-    void setICartesianTrajectory(KDL::Trajectory *trajectory) {
+    void setICartesianTrajectory(KDL::Trajectory *trajectory)
+    {
         this->trajectory = trajectory;
     }
 
@@ -42,3 +47,5 @@ private:
     int axes;
     double startTime;
 };
+
+#endif  // __TRAJECTORY_THREAD_HPP__

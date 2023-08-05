@@ -1,36 +1,44 @@
 // -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*-
 
-#include "StaticLibrary.hpp"
-#include <yarp/os/all.h>
-#include <yarp/dev/all.h>
-#include <yarp/dev/IAnalogSensor.h>
-#include "ICartesianSolver.h"
-#include "KinematicRepresentation.hpp"
-#include "DialogueManager.hpp"
+#ifndef __BALANCE_TRAY_HPP__
+#define __BALANCE_TRAY_HPP__
 
+#include <string>
+#include <vector>
+
+#include <yarp/os/PeriodicThread.h>
+#include <yarp/os/RFModule.h>
+
+#include <yarp/dev/IAnalogSensor.h>
+#include <yarp/dev/IEncoders.h>
+#include <yarp/dev/IPositionControl.h>
+#include <yarp/dev/IPositionDirect.h>
+#include <yarp/dev/IControlLimits.h>
+#include <yarp/dev/IControlMode.h>
+#include <yarp/dev/IRemoteVariables.h>
+#include <yarp/dev/PolyDriver.h>
+
+#include <ICartesianSolver.h>
+#include <KinematicRepresentation.hpp>
+
+#include "DialogueManager.hpp"
 #include "TrajectoryThread.hpp"
 #include "BalanceThread.hpp"
-#include <yarp/os/Semaphore.h>
 
-
-#define DEFAULT_ROBOT "teo" // teo or teoSim (default teo)
-#define DEFAULT_MODE "keyboard"
-#define PT_MODE_MS 50
-#define INPUT_READING_MS 10
-
-using namespace yarp::os;
-using namespace roboticslab;
+constexpr auto DEFAULT_ROBOT = "teo"; // "teo" or "teoSim"
+constexpr auto DEFAULT_MODE = "keyboard";
+constexpr auto PT_MODE_MS = 50;
+constexpr auto INPUT_READING_MS = 10;
 
 namespace teo
 {
 
 /**
  * @ingroup teo-bimanipulation_programs
- *
  * @brief Balance Tray Core.
- *
  */
-class BalanceTray : public yarp::os::RFModule, public yarp::os::PeriodicThread
+class BalanceTray : public yarp::os::RFModule,
+                    public yarp::os::PeriodicThread
 {
 public:
     BalanceTray() : yarp::os::PeriodicThread(INPUT_READING_MS * 0.001) {} // constructor
@@ -49,7 +57,6 @@ private:
     bool testMov;
     bool keyboard;
     bool jr3ToCsv;
-
 
     /** with speech **/
     bool speak;
@@ -84,7 +91,7 @@ private:
 
     /** Solver device **/
     yarp::dev::PolyDriver rightArmSolverDevice;
-    ICartesianSolver *rightArmICartesianSolver;
+    roboticslab::ICartesianSolver *rightArmICartesianSolver;
     /** Thread of right-arm KDL trajectory generator **/
     TrajectoryThread *rightArmTrajThread;
     /** Thread of right-arm Point2Point movement **/
@@ -112,7 +119,7 @@ private:
 
     /** Solver device **/
     yarp::dev::PolyDriver leftArmSolverDevice;
-    ICartesianSolver *leftArmICartesianSolver;
+    roboticslab::ICartesianSolver *leftArmICartesianSolver;
     /** Thread of left-arm KDL trajectory generator **/
     TrajectoryThread *leftArmTrajThread;
     /** Thread of left-arm Point2Point movement **/
@@ -184,4 +191,6 @@ private:
     void run() override;
 };
 
-}
+} // namespace teo
+
+#endif // __BALANCE_TRAY_HPP__

@@ -2,15 +2,21 @@
 
 #include "DialogueManager.hpp"
 
+#include <cmath>
+#include <cstdio>
+
+#include <yarp/os/Bottle.h>
 #include <yarp/os/LogStream.h>
+#include <yarp/os/Network.h>
+#include <yarp/os/Time.h>
 
 namespace teo
 {
 
 /************************************************************************/
 
-DialogueManager::DialogueManager(std::string language) {
-
+DialogueManager::DialogueManager(const std::string & language)
+{
     outTtsPort.open("/balanceTray/tts/rpc:c");
 
     /*
@@ -68,7 +74,8 @@ DialogueManager::DialogueManager(std::string language) {
 
 /************************************************************************/
 
-void DialogueManager::talkTrayStatus(yarp::sig::Vector sensor, std::vector<double> rdsxaa, std::vector<double> ldsxaa){
+void DialogueManager::talkTrayStatus(yarp::sig::Vector sensor, std::vector<double> rdsxaa, std::vector<double> ldsxaa)
+{
     printf("[%f] [%f]\n", rdsxaa[6], ldsxaa[6]);
 
     // centrado entre sensor[13] y sensor[19]
@@ -228,8 +235,8 @@ void DialogueManager::talkTrayStatus(yarp::sig::Vector sensor, std::vector<doubl
 
 /************************************************************************/
 
-void DialogueManager::ttsSay(std::string sayString) {
-
+void DialogueManager::ttsSay(const std::string & sayString)
+{
     yarp::os::Bottle bOut, bRes;
     bOut.addString("say");
     bOut.addString(sayString);

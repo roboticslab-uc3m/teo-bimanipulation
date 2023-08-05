@@ -1,15 +1,18 @@
 // -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*-
 
+#ifndef __BALANCE_THREAD_HPP__
+#define __BALANCE_THREAD_HPP__
+
+#include <mutex>
+#include <vector>
+
 #include <yarp/os/PeriodicThread.h>
-#include <yarp/os/Semaphore.h>
 
 #include <yarp/dev/IEncoders.h>
 #include <yarp/dev/IPositionDirect.h>
 #include <yarp/dev/IPositionControl.h>
-#include "ICartesianSolver.h"
-#include <ConfigurationSelector.hpp>
 
-#define PI 3.141592654
+#include <ICartesianSolver.h>
 
 class BalanceThread : public yarp::os::PeriodicThread
 {
@@ -25,17 +28,16 @@ public:
           axes(0)
     {}
 
-    void setCartesianPosition(std::vector<double> position) {
-       positionMutex.wait();
+    void setCartesianPosition(const std::vector<double> & position)
+    {
+       std::lock_guard lock(positionMutex);
        this->position = position;
-       positionMutex.post();
     }
 
-
-    void getCartesianPosition(std::vector<double> *position) {
-        positionMutex.wait();
+    void getCartesianPosition(std::vector<double> *position) const
+    {
+        std::lock_guard lock(positionMutex);
         *position = this->position;
-        positionMutex.post();
     }
 
 protected:
@@ -43,10 +45,12 @@ protected:
     void run() override;
 
 private:
-    yarp::os::Semaphore positionMutex;
+    mutable std::mutex positionMutex;
     yarp::dev::IEncoders *iEncoders;
     roboticslab::ICartesianSolver *iCartesianSolver;
     yarp::dev::IPositionDirect *iPositionDirect;
     std::vector<double> position;
     int axes;
 };
+
+#endif  // __BALANCE_THREAD_HPP__

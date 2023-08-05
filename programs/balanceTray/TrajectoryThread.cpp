@@ -1,10 +1,12 @@
 // -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*-
 
 #include "TrajectoryThread.hpp"
+
 #include <yarp/os/LogStream.h>
 #include <yarp/os/Time.h>
+
 #include <KdlVectorConverter.hpp>
-#include "KinematicRepresentation.hpp"
+#include <KinematicRepresentation.hpp>
 
 using namespace roboticslab::KinRepresentation;
 using namespace roboticslab::KdlVectorConverter;
@@ -33,13 +35,18 @@ void TrajectoryThread::run()
 
 
     std::vector<double> currentQ(axes);
-    if ( ! iEncoders->getEncoders( currentQ.data() ) ){
+
+    if (!iEncoders->getEncoders(currentQ.data()))
+    {
         yError() << "Failed getEncoders() of right-arm";
         return;
     }
+
     // inverse kinematic
     std::vector<double> desireQ(axes);
-    if ( ! iCartesianSolver->invKin(position, currentQ, desireQ) )    {
+
+    if (!iCartesianSolver->invKin(position, currentQ, desireQ))
+    {
         yError() << "invKin() failed";
         return;
     }

@@ -1,56 +1,53 @@
-# Copyright: Universidad Carlos III de Madrid (C) 2018
-# Authors: Raul de Santos Rico
-# CopyPolicy: Released under the terms of the LGPLv2.1
+cmake_minimum_required(VERSION 3.16)
 
-cmake_minimum_required(VERSION 3.5)
+project(TEO_BIMANIPULATION LANGUAGES CXX)
 
-# Start a project.
-project(TEO_BIMANIPULATION)
+# Let the user specify a configuration (only single-config generators).
+if(NOT CMAKE_CONFIGURATION_TYPES)
+    # Possible values.
+    set(_configurations Debug Release MinSizeRel RelWithDebInfo)
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${_configurations})
 
-# Set module path.
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake
-                              ${CMAKE_SOURCE_DIR}/cmake/modules
-                              ${CMAKE_SOURCE_DIR}/cmake/find-modules
-                              ${CMAKE_SOURCE_DIR}/cmake/ycm-modules)
+    foreach(_conf ${_configurations})
+        set(_conf_string "${_conf_string} ${_conf}")
+    endforeach()
 
-### options: cpp libraries
-option(ENABLE_StaticLibrary "Choose if you want to compile StaticLibrary" TRUE)
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY HELPSTRING
+                 "Choose the type of build, options are:${_conf_string}")
 
-### options: cpp programs
-option(ENABLE_balanceTray "Choose if you want to compile balanceTray demostration" TRUE)
+    if(NOT CMAKE_BUILD_TYPE)
+        # Encourage the user to specify build type.
+        message(STATUS "Setting build type to 'Release' as none was specified.")
+        set_property(CACHE CMAKE_BUILD_TYPE PROPERTY VALUE Release)
+    endif()
+endif()
 
-# Bootstrap YCM.
-# https://github.com/robotology/ycm/issues/118
-set(YCM_TAG v0.9.0)
-include(YCMBootstrap)
+# Hard dependencies.
+find_package(YCM 0.11 REQUIRED)
+find_package(YARP 3.7 REQUIRED COMPONENTS os dev sig)
 
-# Retrieve current TEO_BIMANIPULATION version.
-include(TEO_BIMANIPULATIONVersion)
+# Soft dependencies.
+find_package(orocos_kdl 1.4 QUIET)
+find_package(ROBOTICSLAB_KINEMATICS_DYNAMICS QUIET)
 
-# Define standard paths, check system configuration.
-include(TEO_BIMANIPULATIONSystem)
+# Configure installation paths for YARP resources.
+yarp_configure_external_installation(teo-bimanipulation)
 
-# Setup build options.
-include(TEO_BIMANIPULATIONOptions)
+# Standard installation directories.
+include(GNUInstallDirs)
 
-# Define global properties to store relevant configuration.
-set_property(GLOBAL PROPERTY TEO_BIMANIPULATION_INCLUDE_DIRS)
-set_property(GLOBAL PROPERTY TEO_BIMANIPULATION_TARGETS)
+# Control where libraries and executables are placed during the build.
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
 
-# Define and enter subdirectories.
-add_subdirectory(cmake)
-add_subdirectory(share)
+# Create targets if specific requirements are satisfied.
+include(CMakeDependentOption)
+
+# Add main contents.
 add_subdirectory(libraries)
 add_subdirectory(programs)
+add_subdirectory(share)
 
-# Output configuration files.
-include(TEO_BIMANIPULATIONDescribe)
-
-# Create target for documentation generation.
-include(TEO_BIMANIPULATIONDoc)
-
-# Invoke CPack from here.
-include(TEO_BIMANIPULATIONPackage)
-
-# Generate a report of enabled/disabled features.
-feature_summary(FATAL_ON_MISSING_REQUIRED_PACKAGES WHAT ALL)
+# Configure and create uninstall target.
+include(AddUninstallTarget)
