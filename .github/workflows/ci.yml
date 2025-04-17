@@ -11,7 +11,8 @@ on:
   workflow_dispatch:
 
 env:
-  CMAKE_CCACHE_LAUNCHER: -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+  CMAKE_C_COMPILER_LAUNCHER: ccache
+  CMAKE_CXX_COMPILER_LAUNCHER: ccache
 
 jobs:
   maybe_skip:
@@ -33,10 +34,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, ubuntu-22.04]
+        os: [ubuntu-22.04, ubuntu-24.04]
         robotology:
-        - { yarp: yarp-3.8, cmake: 3.16.x }
-        - { yarp: yarp-3.9, cmake: 3.16.x }
+        - { yarp: yarp-3.10, cmake: 3.19.x }
+        - { yarp: yarp-3.11, cmake: 3.19.x }
         - { yarp: master, cmake: 3.19.x }
         compiler:
         - { cc: gcc, cxx: g++ }
@@ -101,24 +102,24 @@ jobs:
 
     - name: Build YARP
       run: |
-        cmake -S .deps/yarp -B .deps/yarp/build $CMAKE_CCACHE_LAUNCHER -DSKIP_ACE=ON -DYARP_DISABLE_VERSION_SOURCE=ON
+        cmake -S .deps/yarp -B .deps/yarp/build -DSKIP_ACE=ON -DYARP_DISABLE_VERSION_SOURCE=ON
         cmake --build .deps/yarp/build
         sudo cmake --install .deps/yarp/build
 
     - name: Build Orocos KDL
       run: |
-        cmake -S .deps/kdl/orocos_kdl -B .deps/kdl/orocos_kdl/build $CMAKE_CCACHE_LAUNCHER
+        cmake -S .deps/kdl/orocos_kdl -B .deps/kdl/orocos_kdl/build
         cmake --build .deps/kdl/orocos_kdl/build
         sudo cmake --install .deps/kdl/orocos_kdl/build
 
     - name: Build kinematics-dynamics
       run: |
-        cmake -S .deps/kinematics-dynamics -B .deps/kinematics-dynamics/build $CMAKE_CCACHE_LAUNCHER
+        cmake -S .deps/kinematics-dynamics -B .deps/kinematics-dynamics/build
         cmake --build .deps/kinematics-dynamics/build
         sudo cmake --install .deps/kinematics-dynamics/build
 
     - name: Configure teo-bimanipulation
-      run: cmake -S . -B build $CMAKE_CCACHE_LAUNCHER
+      run: cmake -S . -B build
 
     - name: Compile teo-bimanipulation
       run: cmake --build build
