@@ -8,12 +8,12 @@ yarp.Network.init()
 options = yarp.Property()
 options.put('device','CartesianControlClient')
 
-options.put('cartesianRemote','/teo/leftArm/CartesianControl')
-options.put('cartesianLocal','/cc/teo/leftArm')
+options.put('remote','/teo/leftArm/CartesianControl')
+options.put('local','/cc/teo/leftArm')
 ddLeft = yarp.PolyDriver(options)
 
-options.put('cartesianRemote','/teo/rightArm/CartesianControl')
-options.put('cartesianLocal','/cc/teo/rightArm')
+options.put('remote','/teo/rightArm/CartesianControl')
+options.put('local','/cc/teo/rightArm')
 ddRight = yarp.PolyDriver(options)
 
 iccLeft = kinematics_dynamics.viewICartesianControl(ddLeft)
