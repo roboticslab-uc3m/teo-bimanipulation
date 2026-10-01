@@ -14,7 +14,11 @@ using namespace roboticslab::KdlVectorConverter;
 bool TrajectoryThread::threadInit()
 {
     startTime = yarp::os::Time::now();
+#if YARP_VERSION_COMPARE(>=, 4, 0, 0)
+    return iEncoders->getAxes(axes);
+#else
     return iEncoders->getAxes(&axes);
+#endif
 }
 
 void TrajectoryThread::resetTime()
@@ -45,9 +49,9 @@ void TrajectoryThread::run()
     // inverse kinematic
     std::vector<double> desireQ(axes);
 
-    if (!iCartesianSolver->invKin(position, currentQ, desireQ))
+    if (!iCartesianSolver->inverseKinematics(position, currentQ, desireQ))
     {
-        yError() << "invKin() failed";
+        yError() << "inverseKinematics() failed";
         return;
     }
 

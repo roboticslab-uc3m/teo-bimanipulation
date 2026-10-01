@@ -6,6 +6,8 @@
 #include <mutex>
 #include <vector>
 
+#include <yarp/conf/version.h>
+
 #include <yarp/os/PeriodicThread.h>
 
 #include <yarp/dev/IEncoders.h>
@@ -17,15 +19,14 @@
 class BalanceThread : public yarp::os::PeriodicThread
 {
 public:
-    BalanceThread(yarp::dev::IEncoders *iEncoders,
-                  roboticslab::ICartesianSolver *iCartesianSolver,
-                  yarp::dev::IPositionDirect *iPositionDirect,
+    BalanceThread(yarp::dev::IEncoders * iEncoders,
+                  roboticslab::ICartesianSolver * iCartesianSolver,
+                  yarp::dev::IPositionDirect * iPositionDirect,
                   int period)
         : yarp::os::PeriodicThread(period * 0.001),
           iEncoders(iEncoders),
           iCartesianSolver(iCartesianSolver),
-          iPositionDirect(iPositionDirect),
-          axes(0)
+          iPositionDirect(iPositionDirect)
     {}
 
     void setCartesianPosition(const std::vector<double> & position)
@@ -34,10 +35,10 @@ public:
        this->position = position;
     }
 
-    void getCartesianPosition(std::vector<double> *position) const
+    void getCartesianPosition(std::vector<double> & position) const
     {
         std::lock_guard lock(positionMutex);
-        *position = this->position;
+        position = this->position;
     }
 
 protected:
@@ -46,11 +47,15 @@ protected:
 
 private:
     mutable std::mutex positionMutex;
-    yarp::dev::IEncoders *iEncoders;
-    roboticslab::ICartesianSolver *iCartesianSolver;
-    yarp::dev::IPositionDirect *iPositionDirect;
+    yarp::dev::IEncoders * iEncoders {nullptr};
+    roboticslab::ICartesianSolver * iCartesianSolver {nullptr};
+    yarp::dev::IPositionDirect * iPositionDirect {nullptr};
     std::vector<double> position;
-    int axes;
+#if YARP_VERSION_COMPARE(>=, 4, 0, 0)
+    std::size_t axes {0};
+#else
+    int axes {0};
+#endif
 };
 
 #endif  // __BALANCE_THREAD_HPP__

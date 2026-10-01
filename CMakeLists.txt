@@ -24,7 +24,11 @@ endif()
 
 # Hard dependencies.
 find_package(YCM 0.11 REQUIRED)
-find_package(YARP 3.10 REQUIRED COMPONENTS os dev sig)
+set(_yarp_components os dev sig)
+find_package(YARP 3.10 QUIET COMPONENTS ${_yarp_components})
+if(NOT YARP_FOUND)
+    find_package(YARP 4.0 REQUIRED COMPONENTS ${_yarp_components})
+endif()
 
 # Soft dependencies.
 find_package(orocos_kdl 1.4 QUIET)

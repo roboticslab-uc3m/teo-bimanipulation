@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+#include <yarp/conf/version.h>
+
 #include <yarp/os/PeriodicThread.h>
 #include <yarp/os/RFModule.h>
 
@@ -42,7 +44,7 @@ class BalanceTray : public yarp::os::RFModule,
 {
 public:
     BalanceTray() : yarp::os::PeriodicThread(INPUT_READING_MS * 0.001) {} // constructor
-    bool configure(yarp::os::ResourceFinder &rf) override;
+    bool configure(yarp::os::ResourceFinder & rf) override;
 
     /** current vector position of the tray centroid **/
     std::vector<double> rdsxaa;
@@ -53,13 +55,13 @@ private:
     std::string robot;
 
     /** control mode: jr3/keyboard **/
-    bool jr3Balance;
-    bool testMov;
-    bool keyboard;
-    bool jr3ToCsv;
+    bool jr3Balance {false};
+    bool testMov {false};
+    bool keyboard {false};
+    bool jr3ToCsv {false};
 
     /** with speech **/
-    bool speak;
+    bool speak {false};
 
     /** Operating mode: jr3Balance / keyboard / jr3Check2Csv **/
     std::string mode;
@@ -73,76 +75,84 @@ private:
 
     /*-- Right Arm Device --*/
     /** Axes number **/
-    int numLeftArmJoints;
+#if YARP_VERSION_COMPARE(>=, 4, 0, 0)
+    std::size_t numLeftArmJoints {0};
+#else
+    int numLeftArmJoints {0};
+#endif
     /** Device **/
     yarp::dev::PolyDriver rightArmDevice;
     /** Encoders **/
-    yarp::dev::IEncoders *rightArmIEncoders;
+    yarp::dev::IEncoders * rightArmIEncoders {nullptr};
     /** Right Arm ControlMode2 Interface */
-    yarp::dev::IControlMode *rightArmIControlMode;
+    yarp::dev::IControlMode * rightArmIControlMode {nullptr};
     /** Right Arm PositionControl2 Interface */
-    yarp::dev::IPositionControl *rightArmIPositionControl;
+    yarp::dev::IPositionControl * rightArmIPositionControl {nullptr};
     /** Right Arm PositionDirect Interface */
-    yarp::dev::IPositionDirect *rightArmIPositionDirect;
+    yarp::dev::IPositionDirect * rightArmIPositionDirect {nullptr};
     /** Right Arm ControlLimits2 Interface */
-    yarp::dev::IControlLimits *rightArmIControlLimits;
+    yarp::dev::IControlLimits * rightArmIControlLimits {nullptr};
     /** Right Arm RemoteVariables **/
-    yarp::dev::IRemoteVariables *rightArmIRemoteVariables;
+    yarp::dev::IRemoteVariables * rightArmIRemoteVariables {nullptr};
 
     /** Solver device **/
     yarp::dev::PolyDriver rightArmSolverDevice;
-    roboticslab::ICartesianSolver *rightArmICartesianSolver;
+    roboticslab::ICartesianSolver * rightArmICartesianSolver {nullptr};
     /** Thread of right-arm KDL trajectory generator **/
-    TrajectoryThread *rightArmTrajThread;
+    TrajectoryThread * rightArmTrajThread {nullptr};
     /** Thread of right-arm Point2Point movement **/
-    BalanceThread *rightArmBalThread;
+    BalanceThread * rightArmBalThread {nullptr};
     /** Forward Kinematic function **/
-    bool getRightArmFwdKin(std::vector<double> *currentX);
+    bool getRightArmFwdKin(std::vector<double> & currentX);
 
     /*-- Left Arm Device --*/
     /** Axes number **/
-    int numRightArmJoints;
+#if YARP_VERSION_COMPARE(>=, 4, 0, 0)
+    std::size_t numRightArmJoints {0};
+#else
+    int numRightArmJoints {0};
+#endif
     /** Device **/
     yarp::dev::PolyDriver leftArmDevice;
     /** Encoders **/
-    yarp::dev::IEncoders *leftArmIEncoders;
+    yarp::dev::IEncoders * leftArmIEncoders {nullptr};
     /** Left Arm ControlMode2 Interface */
-    yarp::dev::IControlMode *leftArmIControlMode;
+    yarp::dev::IControlMode * leftArmIControlMode {nullptr};
     /** Left Arm PositionControl2 Interface */
-    yarp::dev::IPositionControl *leftArmIPositionControl;
+    yarp::dev::IPositionControl * leftArmIPositionControl {nullptr};
     /** Left Arm PositionDirect Interface */
-    yarp::dev::IPositionDirect *leftArmIPositionDirect;
+    yarp::dev::IPositionDirect * leftArmIPositionDirect {nullptr};
     /** Left Arm ControlLimits2 Interface */
-    yarp::dev::IControlLimits *leftArmIControlLimits;
+    yarp::dev::IControlLimits * leftArmIControlLimits {nullptr};
     /** Left Arm RemoteVariables **/
-    yarp::dev::IRemoteVariables *leftArmIRemoteVariables;
+    yarp::dev::IRemoteVariables * leftArmIRemoteVariables {nullptr};
 
     /** Solver device **/
     yarp::dev::PolyDriver leftArmSolverDevice;
-    roboticslab::ICartesianSolver *leftArmICartesianSolver;
+    roboticslab::ICartesianSolver * leftArmICartesianSolver {nullptr};
     /** Thread of left-arm KDL trajectory generator **/
-    TrajectoryThread *leftArmTrajThread;
+    TrajectoryThread * leftArmTrajThread {nullptr};
     /** Thread of left-arm Point2Point movement **/
-    BalanceThread *leftArmBalThread;
+    BalanceThread * leftArmBalThread {nullptr};
     /** Forward Kinematic function **/
-    bool getLeftArmFwdKin(std::vector<double> *currentX);
+    bool getLeftArmFwdKin(std::vector<double> & currentX);
 
     /** JR3 device **/
     yarp::dev::PolyDriver jr3card;
-    yarp::dev::IAnalogSensor *iAnalogSensor;
+    yarp::dev::IAnalogSensor * iAnalogSensor {nullptr};
     yarp::sig::Vector sensorValues;
 
     /** Reference position functions **/
     std::vector<double> rightArmRefpos;
-    std::vector<double>  leftArmRefpos;
-    bool setRefPosition(std::vector<double> rx, std::vector<double> lx);
-    bool getRefPosition(std::vector<double> *rx, std::vector<double> *lx);
+    std::vector<double> leftArmRefpos;
+    bool setRefPosition(const std::vector<double> & rx, const std::vector<double> & lx);
+    bool getRefPosition(std::vector<double> & rx, std::vector<double> & lx);
     bool homePosition(); // initial pos
 
     /****** FUNCTIONS ******/
 
     /** Execute trajectory using a thread and KdlTrajectory**/
-    bool executeTrajectory(std::vector<double> rx, std::vector<double> lx, std::vector<double> rxd, std::vector<double> lxd, double duration, double maxvel);
+    bool executeTrajectory(const std::vector<double> & rx, const std::vector<double> & lx, const std::vector<double> & rxd, const std::vector<double> & lxd, double duration, double maxvel);
     bool rotateTrayByTrajectory(int axis, double angle, double duration, double maxvel);
     bool passJr3ValuesToCsv();
 
@@ -151,40 +161,40 @@ private:
     bool configArmsToPositionDirect();
 
     /** Modes to move the joins **/
-    bool moveJointsInPosition(std::vector<double> &rightArm, std::vector<double>& leftArm);
-    bool moveJointsInPositionDirect(std::vector<double> &rightArm, std::vector<double> &leftArm);
+    bool moveJointsInPosition(const std::vector<double> & rightArm, const std::vector<double> & leftArm);
+    bool moveJointsInPositionDirect(const std::vector<double> & rightArm, const std::vector<double> & leftArm);
 
 
     /** calculate next point in relation to the forces readed by the sensor or key pressed **/
-    bool calculatePointOpposedToForce(yarp::sig::Vector sensor, std::vector<double> *rdx, std::vector<double> *ldx);
-    bool calculatePointPressingKeyboard(std::vector<double> *rdx, std::vector<double> *ldx);
+    bool calculatePointOpposedToForce(const yarp::sig::Vector & sensor, std::vector<double> & rdx, std::vector<double> & ldx);
+    bool calculatePointPressingKeyboard(std::vector<double> & rdx, std::vector<double> & ldx);
 
 
     /** Check movements functions */
     void checkLinearlyMovement();
 
     /** Get axis rotation of the tray **/
-    bool getAxisRotation(std::vector<double> *axisRotation);
+    bool getAxisRotation(std::vector<double> & axisRotation);
 
     /** Write information in CSV file **/
-    FILE *fp;
-    bool writeInfo2Csv(double timeStamp, std::vector<double> axisRotation, yarp::sig::Vector jr3Values);
+    FILE * fp {nullptr};
+    bool writeInfo2Csv(double timeStamp, const std::vector<double> & axisRotation, const yarp::sig::Vector & jr3Values);
     // ireration
-    int i;
+    int i {0};
 
     /** Show information **/
     void printFKinAAS();
     void printFKinAA();
-    void printJr3(yarp::sig::Vector values);
+    void printJr3(const yarp::sig::Vector & values);
 
     /** movement finished */
-    bool done;
+    bool done {false};
 
     /** Current time **/
-    double initTime;
+    double initTime {0.0};
 
     /** Dialogue manager */
-    DialogueManager *dialogueManager;
+    DialogueManager * dialogueManager {nullptr};
 
     /** Thread run */
     bool threadInit() override;

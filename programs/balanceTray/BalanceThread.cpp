@@ -8,13 +8,17 @@ using namespace roboticslab;
 
 bool BalanceThread::threadInit()
 {
+#if YARP_VERSION_COMPARE(>=, 4, 0, 0)
+    return iEncoders->getAxes(axes);
+#else
     return iEncoders->getAxes(&axes);
+#endif
 }
 
 void BalanceThread::run()
 {
     std::vector<double> position;
-    getCartesianPosition(&position);
+    getCartesianPosition(position);
 
     std::vector<double> currentQ(axes);
 
@@ -27,9 +31,9 @@ void BalanceThread::run()
     // inverse kinematic
     std::vector<double> desireQ(axes);
 
-    if (!iCartesianSolver->invKin(position, currentQ, desireQ))
+    if (!iCartesianSolver->inverseKinematics(position, currentQ, desireQ))
     {
-        yError() << "invKin() failed";
+        yError() << "inverseKinematics() failed";
         return;
     }
 
